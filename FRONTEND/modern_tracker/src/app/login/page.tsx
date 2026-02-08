@@ -3,11 +3,13 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation"; 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faEnvelope, faLock, faSpinner } from "@fortawesome/free-solid-svg-icons";
+// CHANGED: Imported faPhone instead of faEnvelope
+import { faPhone, faLock, faSpinner } from "@fortawesome/free-solid-svg-icons";
 
 const LoginPage = () => {
   const router = useRouter();
-  const [email, setEmail] = useState("");
+  // CHANGED: State is now phoneNumber
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -24,7 +26,8 @@ const LoginPage = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          username: email, 
+          // CHANGED: The key must be 'phone_number' to match your Django User model
+          phone_number: phoneNumber, 
           password: password,
         }),
       });
@@ -36,10 +39,9 @@ const LoginPage = () => {
         localStorage.setItem("access_token", data.access);
         localStorage.setItem("refresh_token", data.refresh);
         
-        // 2. Save User Info (For the Header to display)
-        // Note: Later we will fetch the real First/Last name from a /me/ endpoint.
-        // For now, we store the email to display it.
-        localStorage.setItem("user_email", email);
+        // 2. Save User Info
+        // CHANGED: storing phone instead of email for display
+        localStorage.setItem("user_phone", phoneNumber);
 
         // 3. Redirect to Dashboard
         router.push("/"); 
@@ -60,7 +62,7 @@ const LoginPage = () => {
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-[#0f1535] mb-2">Welcome Back</h1>
-          <p className="text-gray-500 text-sm">Enter your credentials to access the inventory.</p>
+          <p className="text-gray-500 text-sm">Enter your phone number to access the inventory.</p>
         </div>
 
         {/* Error Message */}
@@ -73,19 +75,18 @@ const LoginPage = () => {
         {/* Form */}
         <form onSubmit={handleLogin} className="space-y-6">
           
-          {/* Email Input */}
+          {/* Phone Number Input */}
           <div>
-            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Username / Email</label>
+            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Phone Number</label>
             <div className="relative">
-              <FontAwesomeIcon icon={faEnvelope} className="absolute left-4 top-3.5 text-gray-400 w-4 h-4" />
+              <FontAwesomeIcon icon={faPhone} className="absolute left-4 top-3.5 text-gray-400 w-4 h-4" />
               <input
-                type="text"
+                type="tel"
                 required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                // ADDED: text-gray-900 to make text visible
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
                 className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm text-gray-900 placeholder-gray-400"
-                placeholder="admin"
+                placeholder="+1 234 567 890"
               />
             </div>
           </div>
@@ -100,7 +101,6 @@ const LoginPage = () => {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                // ADDED: text-gray-900 to make text visible
                 className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm text-gray-900 placeholder-gray-400"
                 placeholder="••••••••"
               />
