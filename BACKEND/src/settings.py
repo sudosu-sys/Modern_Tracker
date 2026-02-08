@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-@e087z&ewjhwov!wm5af#cg1nfb2!rw$z)^1qaxs%6w0q5))xh
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['moderntrackerbackend.pythonanywhere.com']
+ALLOWED_HOSTS = ['moderntrackerbackend.pythonanywhere.com', 'localhost', '127.0.0.1']
 
 
 # Application definition
@@ -137,10 +137,13 @@ MEDIA_ROOT = BASE_DIR / "media"
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "https://modern-tracker.vercel.app",
+    "http://127.0.0.1:3000",
 ]
 CSRF_TRUSTED_ORIGINS = [
     "https://modern-tracker.vercel.app",
 ]
+
+CORS_ALLOW_CREDENTIALS = True
 
 # Configure REST Framework to use JWT
 REST_FRAMEWORK = {
