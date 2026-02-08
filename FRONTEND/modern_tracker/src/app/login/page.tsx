@@ -18,7 +18,7 @@ const LoginPage = () => {
     setError("");
 
     try {
-      const res = await fetch("http://localhost:8000/api/token/", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_MODERN_TRACKER_URL}/api/token/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

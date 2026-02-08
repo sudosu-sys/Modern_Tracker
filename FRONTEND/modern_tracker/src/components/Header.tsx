@@ -52,7 +52,7 @@ const Header = ({ onMenuClick }: HeaderProps) => {
     if (!token) return;
 
     try {
-      const res = await fetch("http://localhost:8000/api/me/", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_MODERN_TRACKER_URL}/api/me/`, {
         method: "GET",
         headers: {
           "Authorization": `Bearer ${token}`,
@@ -130,7 +130,7 @@ const Header = ({ onMenuClick }: HeaderProps) => {
 
     try {
       const token = localStorage.getItem("access_token");
-      const res = await fetch("http://localhost:8000/api/activate/", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_MODERN_TRACKER_URL}/api/activate/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

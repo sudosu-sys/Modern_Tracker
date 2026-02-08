@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-@e087z&ewjhwov!wm5af#cg1nfb2!rw$z)^1qaxs%6w0q5))xh
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['moderntrackerbackend.pythonanywhere.com']
 
 
 # Application definition
@@ -128,6 +128,10 @@ STATIC_URL = 'static/'
 # Allow Next.js to talk to Django
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
+    "https://modern-tracker.vercel.app",
+]
+CSRF_TRUSTED_ORIGINS = [
+    "https://modern-tracker.vercel.app",
 ]
 
 # Configure REST Framework to use JWT
