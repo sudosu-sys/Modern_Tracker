@@ -25,7 +25,7 @@ interface UserData {
   first_name: string;
   last_name: string;
   email: string;
-  username: string;
+  phone_number: string; // Changed from username to phone_number
   serial_key?: SerialKeyData;
 }
 
@@ -169,8 +169,10 @@ const Header = ({ onMenuClick }: HeaderProps) => {
 
   const getDisplayName = () => {
     if (!user) return "Guest";
+    // If they have a name, use it
     if (user.first_name && user.last_name) return `${user.first_name} ${user.last_name}`;
-    return user.username;
+    // Otherwise fallback to phone number (username is no longer sent by backend)
+    return user.phone_number;
   };
 
   return (

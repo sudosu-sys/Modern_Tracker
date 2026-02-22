@@ -47,6 +47,8 @@ class SerialKey(models.Model):
     start_date = models.DateTimeField()
     end_date = models.DateTimeField()
     created_at = models.DateTimeField(auto_now_add=True)
+    # Feature Switches
+    allow_inventory = models.BooleanField(default=False, help_text="Toggle this to allow access to the Inventory App")
 
     def save(self, *args, **kwargs):
         if not self.key:

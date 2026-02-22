@@ -1,6 +1,7 @@
 // src/components/Sidebar.tsx
 "use client";
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faHome,
@@ -31,6 +32,7 @@ interface SidebarProps {
 }
 
 const Sidebar = ({ isOpen, onClose, isCollapsed, toggleCollapse }: SidebarProps) => {
+  const router = useRouter();
   const [expandedMenu, setExpandedMenu] = useState<string | null>(null);
 
   const toggleMenu = (name: string) => {
@@ -49,11 +51,16 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, toggleCollapse }: SidebarProps)
     { section: "ADMIN", items: [] },
     {
       items: [
-        { name: "Dashboard", icon: faHome, active: true },
+        { name: "Dashboard", icon: faHome, path: "/" },
         {
-          name: "Products",
+          name: "Inventory", // RENAMED
           icon: faBox,
-          subItems: ["Product List", "Create Product", "Product Reviews"],
+          // UPDATED: subItems are now objects with paths
+          subItems: [
+            { name: "Inventory List", path: "/inventory" },
+            { name: "Add Item", path: "/inventory/create" },
+            { name: "Reviews", path: "/inventory/reviews" }
+          ],
         },
         {
           name: "Categories",
@@ -155,13 +162,18 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, toggleCollapse }: SidebarProps)
 
               {/* Menu Items */}
               {group.items &&
-                group.items.map((item) => (
+                // FIX: Cast item to 'any' to allow accessing properties like 'active' or 'path' without strict type errors
+                group.items.map((item: any) => (
                   <div key={item.name} className="mb-1">
                     {/* Parent Item */}
                     <div
-                      onClick={() =>
-                        item.subItems ? toggleMenu(item.name) : null
-                      }
+                      onClick={() => {
+                        if (item.subItems) {
+                          toggleMenu(item.name);
+                        } else if (item.path) {
+                          router.push(item.path);
+                        }
+                      }}
                       className={`flex items-center p-3 rounded-lg cursor-pointer transition-all duration-200 
                         ${item.active ? "text-blue-500" : expandedMenu === item.name ? "text-gray-100" : "hover:bg-gray-800 hover:text-gray-200"}
                         ${isCollapsed ? "justify-center" : "justify-between"}
@@ -187,16 +199,18 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, toggleCollapse }: SidebarProps)
                       )}
                     </div>
 
-                    {/* Sub Menu Items (Hidden when collapsed) */}
+                    {/* Sub Menu Items */}
                     {!isCollapsed && item.subItems && expandedMenu === item.name && (
                       <div className="mt-1 ml-4 space-y-1 pl-3 border-l border-gray-700">
-                        {item.subItems.map((sub, subIdx) => (
+                        {item.subItems.map((sub: any, subIdx: number) => (
                           <div
                             key={subIdx}
+                            onClick={() => router.push(sub.path)}
                             className="flex items-center gap-2 p-2 rounded-md text-xs font-medium cursor-pointer text-gray-400 hover:text-blue-500 hover:bg-gray-800/50 transition-colors"
                           >
                             <span className="w-1 h-1 rounded-full bg-gray-500"></span>
-                            {sub}
+                            {/* Handle both string (old) and object (new) structure */}
+                            {typeof sub === 'string' ? sub : sub.name}
                           </div>
                         ))}
                       </div>

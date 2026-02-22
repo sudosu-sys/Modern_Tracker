@@ -31,12 +31,16 @@ class CustomUserAdmin(UserAdmin):
 # 2. Update SerialKey Admin
 @admin.register(SerialKey)
 class SerialKeyAdmin(admin.ModelAdmin):
-    list_display = ('user', 'key', 'start_date', 'end_date', 'is_active_status')
+    # Added 'allow_inventory' to the display list
+    list_display = ('user', 'key', 'start_date', 'end_date', 'allow_inventory', 'is_active_status')
+    
+    # This makes the switch toggleable directly from the list view!
+    list_editable = ('allow_inventory',)
     
     # CHANGED: Replaced 'user__username' with 'user__phone_number'
     search_fields = ('user__phone_number', 'user__email', 'key')
     
-    list_filter = ('start_date', 'end_date')
+    list_filter = ('start_date', 'end_date', 'allow_inventory') # Added filter for inventory access
     readonly_fields = ('key',)
 
     def is_active_status(self, obj):

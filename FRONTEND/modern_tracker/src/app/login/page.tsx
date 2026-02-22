@@ -26,7 +26,7 @@ const LoginPage = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          // CHANGED: The key must be 'phone_number' to match your Django User model
+          // SimpleJWT looks for your model's USERNAME_FIELD, which you defined as 'phone_number'
           phone_number: phoneNumber, 
           password: password,
         }),
