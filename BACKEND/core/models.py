@@ -2,7 +2,7 @@ import uuid
 from django.db import models
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.utils import timezone
-from django.conf import settings  # We use this to refer to the user model
+from django.conf import settings 
 
 # 1. Define the Manager to handle creating users with phone_number
 class CustomUserManager(BaseUserManager):
@@ -22,11 +22,11 @@ class CustomUserManager(BaseUserManager):
 
 # 2. Define the Custom User Model
 class CustomUser(AbstractUser):
-    username = None  # Remove the username field
+    username = None  
     phone_number = models.CharField(max_length=15, unique=True)
 
-    USERNAME_FIELD = 'phone_number'  # Login with this
-    REQUIRED_FIELDS = []  # No other fields required for superuser creation
+    USERNAME_FIELD = 'phone_number'  
+    REQUIRED_FIELDS = []  
 
     objects = CustomUserManager()
 
@@ -36,7 +36,7 @@ class CustomUser(AbstractUser):
 # 3. Update SerialKey to link to the new Custom User
 class SerialKey(models.Model):
     user = models.OneToOneField(
-        settings.AUTH_USER_MODEL,  # CHANGED: Reference the custom model dynamically
+        settings.AUTH_USER_MODEL,  
         on_delete=models.CASCADE, 
         related_name='serial_key',
         null=True, 
@@ -47,8 +47,10 @@ class SerialKey(models.Model):
     start_date = models.DateTimeField()
     end_date = models.DateTimeField()
     created_at = models.DateTimeField(auto_now_add=True)
-    # Feature Switches
+    
+    # --- Feature Switches ---
     allow_inventory = models.BooleanField(default=False, help_text="Toggle this to allow access to the Inventory App")
+    allow_hr = models.BooleanField(default=False, help_text="Toggle this to allow access to the HR & Payroll App")
 
     def save(self, *args, **kwargs):
         if not self.key:
@@ -64,6 +66,5 @@ class SerialKey(models.Model):
         return self.start_date <= now <= self.end_date
 
     def __str__(self):
-        # CHANGED: Use phone_number instead of username
         user_display = self.user.phone_number if self.user else "Unassigned"
         return f"{user_display} - {self.key}"

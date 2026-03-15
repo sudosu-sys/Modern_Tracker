@@ -8,7 +8,8 @@ User = get_user_model()
 class SerialKeySerializer(serializers.ModelSerializer):
     class Meta:
         model = SerialKey
-        fields = ['key', 'start_date', 'end_date', 'is_valid']
+        # ADDED: allow_inventory and allow_hr
+        fields = ['key', 'start_date', 'end_date', 'is_valid', 'allow_inventory', 'allow_hr']
 
 class UserSerializer(serializers.ModelSerializer):
     serial_key = SerialKeySerializer(read_only=True)

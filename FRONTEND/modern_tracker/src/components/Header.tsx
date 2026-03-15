@@ -1,5 +1,3 @@
-// src/components/Header.tsx
-
 "use client";
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -19,13 +17,14 @@ interface SerialKeyData {
   start_date: string;
   end_date: string;
   is_valid: boolean;
+  allow_hr: boolean; // ADDED: So the frontend knows about the permission
 }
 
 interface UserData {
   first_name: string;
   last_name: string;
   email: string;
-  phone_number: string; // Changed from username to phone_number
+  phone_number: string; 
   serial_key?: SerialKeyData;
 }
 
@@ -34,14 +33,14 @@ const Header = ({ onMenuClick }: HeaderProps) => {
   
   // -- UI STATES --
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [isRenewModalOpen, setIsRenewModalOpen] = useState(false); // Modal State
-  const [renewalKey, setRenewalKey] = useState("");                // Input State
+  const [isRenewModalOpen, setIsRenewModalOpen] = useState(false); 
+  const [renewalKey, setRenewalKey] = useState("");                
   
   // -- DATA STATES --
   const [user, setUser] = useState<UserData | null>(null);
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   const [hasActiveTimer, setHasActiveTimer] = useState(false);
-  const [isExpired, setIsExpired] = useState(false); // New state for expiration
+  const [isExpired, setIsExpired] = useState(false); 
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
@@ -97,7 +96,6 @@ const Header = ({ onMenuClick }: HeaderProps) => {
           seconds: Math.floor((difference / 1000) % 60),
         };
       } else {
-        // Expired Logic
         setHasActiveTimer(false);
         setIsExpired(true);
         return { days: 0, hours: 0, minutes: 0, seconds: 0 };
@@ -114,16 +112,10 @@ const Header = ({ onMenuClick }: HeaderProps) => {
 
   // -- KEY INPUT FORMATTER --
   const handleKeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // 1. Remove non-alphanumeric, convert to upper
     let raw = e.target.value.replace(/[^A-Z0-9]/gi, "").toUpperCase();
-    
-    // 2. Limit to 16 chars
     if (raw.length > 16) raw = raw.slice(0, 16);
-
-    // 3. Add dashes every 4 chars
     const parts = raw.match(/.{1,4}/g);
     const formatted = parts ? parts.join("-") : raw;
-
     setRenewalKey(formatted);
   };
 
@@ -144,13 +136,11 @@ const Header = ({ onMenuClick }: HeaderProps) => {
       const data = await res.json();
 
       if (res.ok) {
-        // Success!
         alert("License Activated Successfully!");
         setIsRenewModalOpen(false);
         setRenewalKey("");
-        fetchUserData(); // Refresh the header to show the new timer immediately
+        fetchUserData(); 
       } else {
-        // Error (Expired, Invalid, Used)
         alert(data.error || "Activation failed.");
       }
     } catch (error) {
@@ -169,16 +159,13 @@ const Header = ({ onMenuClick }: HeaderProps) => {
 
   const getDisplayName = () => {
     if (!user) return "Guest";
-    // If they have a name, use it
     if (user.first_name && user.last_name) return `${user.first_name} ${user.last_name}`;
-    // Otherwise fallback to phone number (username is no longer sent by backend)
     return user.phone_number;
   };
 
   return (
     <>
       <header className="h-20 bg-white shadow-sm flex items-center justify-between px-4 md:px-8 sticky top-0 z-20">
-        {/* Left: Browse & Menu */}
         <div className="flex items-center gap-4">
           <button onClick={onMenuClick} className="md:hidden text-gray-500 hover:text-blue-600 focus:outline-none">
             <FontAwesomeIcon icon={faBars} className="w-5 h-5" />
@@ -189,7 +176,6 @@ const Header = ({ onMenuClick }: HeaderProps) => {
           </button>
         </div>
 
-        {/* Right: Actions */}
         <div className="flex items-center gap-4 md:gap-6">
           <div className="relative hidden sm:block">
             <FontAwesomeIcon icon={faSearch} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -201,7 +187,6 @@ const Header = ({ onMenuClick }: HeaderProps) => {
             <span className="absolute -top-1 -right-1 bg-red-500 rounded-full w-2 h-2 border border-white"></span>
           </div>
 
-          {/* Profile Dropdown Section */}
           <div className="relative">
             <button 
               onClick={() => setIsProfileOpen(!isProfileOpen)}
@@ -222,16 +207,13 @@ const Header = ({ onMenuClick }: HeaderProps) => {
                         <p className="text-xs text-gray-500 truncate">{user.email}</p>
                       </div>
 
-                      {/* --- LICENSE STATUS SECTION --- */}
                       {isMounted && (
                         <div className={`px-5 py-3 border-b border-gray-100 ${hasActiveTimer ? 'bg-blue-50/50' : isExpired ? 'bg-red-50' : 'bg-gray-50'}`}>
                           
-                          {/* Case 1: Active Timer */}
                           {hasActiveTimer && (
                             <>
                               <p className="text-[10px] uppercase font-bold text-blue-800 mb-2 tracking-wider text-center">License Expires In</p>
                               <div className="flex justify-between items-center gap-2 text-center">
-                                {/* Timer Blocks (Days/Hrs/Min/Sec) */}
                                 {['Days', 'Hrs', 'Min', 'Sec'].map((label, i) => (
                                   <div key={label} className="flex flex-col items-center bg-white p-2 rounded-lg shadow-sm w-14">
                                     <span className="text-lg font-bold text-blue-600 leading-none">
@@ -247,7 +229,6 @@ const Header = ({ onMenuClick }: HeaderProps) => {
                             </>
                           )}
 
-                          {/* Case 2: Expired */}
                           {isExpired && (
                             <div className="text-center py-2">
                               <div className="flex justify-center mb-2">
@@ -266,7 +247,6 @@ const Header = ({ onMenuClick }: HeaderProps) => {
                             </div>
                           )}
 
-                          {/* Case 3: No Key Found (Guest/New User) */}
                           {!hasActiveTimer && !isExpired && (
                              <div className="text-center py-2">
                                <FontAwesomeIcon icon={faKey} className="text-gray-300 w-6 h-6 mb-2" />
@@ -281,7 +261,6 @@ const Header = ({ onMenuClick }: HeaderProps) => {
                           )}
                         </div>
                       )}
-                      {/* ----------------------------- */}
 
                       <div className="py-2">
                         <button className="w-full text-left px-5 py-2 text-sm text-gray-600 hover:bg-gray-50 hover:text-blue-600 flex items-center gap-3 transition-colors">
@@ -317,7 +296,6 @@ const Header = ({ onMenuClick }: HeaderProps) => {
         </div>
       </header>
 
-      {/* --- RENEW LICENSE MODAL --- */}
       {isRenewModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsRenewModalOpen(false)}></div>
