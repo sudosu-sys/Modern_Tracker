@@ -1,3 +1,4 @@
+# HR/serializers.py
 from rest_framework import serializers
 from .models import Department, Employee, Attendance, LeaveRequest, PayrollRun, PayStub, PerformanceReview
 

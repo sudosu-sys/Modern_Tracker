@@ -1,3 +1,4 @@
+# core/models.py
 import uuid
 from django.db import models
 from django.contrib.auth.models import AbstractUser, BaseUserManager
@@ -51,6 +52,7 @@ class SerialKey(models.Model):
     # --- Feature Switches ---
     allow_inventory = models.BooleanField(default=False, help_text="Toggle this to allow access to the Inventory App")
     allow_hr = models.BooleanField(default=False, help_text="Toggle this to allow access to the HR & Payroll App")
+    allow_finance = models.BooleanField(default=False, help_text="Toggle this to allow access to the Finance & Expense App")
 
     def save(self, *args, **kwargs):
         if not self.key:

@@ -1,3 +1,4 @@
+# core/serializers.py
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from .models import SerialKey
@@ -8,8 +9,8 @@ User = get_user_model()
 class SerialKeySerializer(serializers.ModelSerializer):
     class Meta:
         model = SerialKey
-        # ADDED: allow_inventory and allow_hr
-        fields = ['key', 'start_date', 'end_date', 'is_valid', 'allow_inventory', 'allow_hr']
+        # ADDED: allow_inventory, allow_hr, allow_finance
+        fields = ['key', 'start_date', 'end_date', 'is_valid', 'allow_inventory', 'allow_hr', 'allow_finance']
 
 class UserSerializer(serializers.ModelSerializer):
     serial_key = SerialKeySerializer(read_only=True)

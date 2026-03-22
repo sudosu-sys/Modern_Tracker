@@ -1,3 +1,4 @@
+# HR/permissions.py
 from rest_framework import permissions
 
 class HasHRAccess(permissions.BasePermission):
