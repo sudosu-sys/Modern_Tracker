@@ -11,6 +11,8 @@ class UserOwnedModel(models.Model):
     This ensures every item is linked to a specific user/tenant.
     """
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="%(class)s_owned")
+    # ADDED: Linking all items to the new Shop model in core (nullable so it doesn't break existing data)
+    shop = models.ForeignKey('core.Shop', on_delete=models.CASCADE, related_name="%(class)s_shop", null=True, blank=True)
 
     class Meta:
         abstract = True
@@ -136,16 +138,19 @@ class InventoryTransaction(UserOwnedModel):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def save(self, *args, **kwargs):
+        from decimal import Decimal
         # AUTOMATED STOCK UPDATE LOGIC
         if not self.pk: # Only on create
             if self.source_location:
                 src_stock, _ = Stock.objects.get_or_create(product=self.product, location=self.source_location)
-                src_stock.quantity -= self.quantity
+                # Cast both to Decimal to prevent float vs Decimal TypeErrors
+                src_stock.quantity = Decimal(str(src_stock.quantity)) - Decimal(str(self.quantity))
                 src_stock.save()
             
             if self.destination_location:
                 dest_stock, _ = Stock.objects.get_or_create(product=self.product, location=self.destination_location)
-                dest_stock.quantity += self.quantity
+                # Cast both to Decimal to prevent float vs Decimal TypeErrors
+                dest_stock.quantity = Decimal(str(dest_stock.quantity)) + Decimal(str(self.quantity))
                 dest_stock.save()
                 
         super().save(*args, **kwargs)

@@ -1,3 +1,5 @@
+# finance/models.py
+
 from django.db import models
 from django.utils import timezone
 from inventory.models import UserOwnedModel

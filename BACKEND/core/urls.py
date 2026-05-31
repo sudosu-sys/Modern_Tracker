@@ -1,10 +1,16 @@
 # core/urls.py
-from django.urls import path
+from django.urls import path, include
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
 )
-from .views import current_user_view, activate_key_view
+from .views import *
+
+from rest_framework.routers import DefaultRouter
+from .views import ShopEmployeeViewSet
+
+router = DefaultRouter()
+router.register(r'shop-employees', ShopEmployeeViewSet, basename='shop-employees')
 
 urlpatterns = [
     # This is your Login Endpoint
@@ -13,4 +19,6 @@ urlpatterns = [
 
     path('me/', current_user_view, name='current_user'),
     path('activate/', activate_key_view, name='activate_key'),
+    path('admin-dashboard/', admin_dashboard_view, name='admin_dashboard'),
+    path('', include(router.urls)),
 ]

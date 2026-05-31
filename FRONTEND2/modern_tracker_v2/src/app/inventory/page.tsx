@@ -9,7 +9,7 @@ import {
   faPlus, faSearch, faFilter, faEllipsisV, 
   faBoxOpen, faCheckCircle, faExclamationTriangle, faTimesCircle,
   faBarcode, faWarehouse, faChartLine, faHistory,
-  faLock, faTimes, faSpinner
+  faLock, faTimes, faSpinner, faEdit, faTrash, faQrcode, faMinus
 } from "@fortawesome/free-solid-svg-icons";
 
 // --- TYPES ---
@@ -19,6 +19,8 @@ interface InventoryItem {
   sku: string;
   category: string;
   price: number;
+  cost_price: number;
+  low_stock_threshold: number;
   stock: number;
   uom: string;
   location: string;
@@ -30,6 +32,7 @@ interface InventoryItem {
 }
 
 interface DashboardStats {
+  shop_name?: string;
   total_products: number;
   low_stock_alert: number;
   inventory_valuation: number;
@@ -46,6 +49,14 @@ export default function InventoryPage() {
   const [activeTab, setActiveTab] = useState("All");
   const [searchTerm, setSearchTerm] = useState("");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false); // Modal State
+  const [isAdjustModalOpen, setIsAdjustModalOpen] = useState(false);
+  const [adjustProduct, setAdjustProduct] = useState<InventoryItem | null>(null);
+  const [adjustAction, setAdjustAction] = useState<'add'|'sell'>('add');
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editProduct, setEditProduct] = useState<InventoryItem | null>(null);
+  const [isLabelModalOpen, setIsLabelModalOpen] = useState(false);
+  const [labelProduct, setLabelProduct] = useState<InventoryItem | null>(null);
+  const [openDropdownId, setOpenDropdownId] = useState<number | null>(null);
   
   // Data States
   const [items, setItems] = useState<InventoryItem[]>([]);
@@ -84,6 +95,8 @@ export default function InventoryPage() {
                   sku: p.sku,
                   category: p.category ? `Category ${p.category}` : "Uncategorized",
                   price: parseFloat(p.selling_price),
+                  cost_price: parseFloat(p.cost_price),
+                  low_stock_threshold: p.low_stock_threshold,
                   stock: p.total_stock,
                   uom: p.uom,
                   location: "Multiple",
@@ -106,6 +119,51 @@ export default function InventoryPage() {
   useEffect(() => {
     fetchData();
   }, [router]);
+
+  // --- DELETE PRODUCT ACTION ---
+  const handleDeleteProduct = async (id: number) => {
+    if (!confirm("Are you sure you want to delete this product? This action cannot be undone.")) return;
+    
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
+
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_MODERN_TRACKER_URL}/api/inventory/products/${id}/`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        fetchData();
+      } else {
+        alert("Failed to delete product.");
+      }
+    } catch (error) {
+      console.error("Error deleting product:", error);
+    }
+  };
+
+  // --- QUICK SALE ACTION ---
+  const handleQuickSale = async (productId: number) => {
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
+    
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_MODERN_TRACKER_URL}/api/inventory/products/${productId}/quick_sale/`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ quantity: 1 })
+      });
+      
+      if (res.ok) {
+        fetchData(); // Instantly refresh table and dashboard stats
+      } else {
+        const err = await res.json();
+        alert(err.error || "Failed to process quick sale.");
+      }
+    } catch (error) {
+      console.error("Error processing quick sale:", error);
+    }
+  };
 
   // --- ACCESS DENIED VIEW ---
   if (accessDenied) {
@@ -171,7 +229,7 @@ export default function InventoryPage() {
           {/* Header */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-[#0f1535]">Inventory Management</h1>
+              <h1 className="text-2xl font-bold text-[#0f1535]">{stats?.shop_name ? `${stats.shop_name} Inventory` : 'Inventory Management'}</h1>
               <p className="text-sm text-gray-500">Track stock, manage warehouses, and forecast demand.</p>
             </div>
             <div className="flex gap-3">
@@ -267,9 +325,31 @@ export default function InventoryPage() {
                             </span>
                         </td>
                         <td className="px-6 py-4 text-right">
-                            <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"><FontAwesomeIcon icon={faHistory} className="w-3.5 h-3.5" /></button>
-                            <button className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"><FontAwesomeIcon icon={faEllipsisV} className="w-3.5 h-3.5" /></button>
+                            <div className="flex justify-end items-center gap-3">
+                                {/* +/- Quick Stock Adjustments */}
+                                <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+                                    <button onClick={() => { setAdjustProduct(item); setAdjustAction('sell'); setIsAdjustModalOpen(true); }} className="w-7 h-7 flex items-center justify-center rounded bg-white text-gray-600 hover:text-red-600 shadow-sm transition-colors" title="Deduct Stock"><FontAwesomeIcon icon={faMinus} className="w-3 h-3" /></button>
+                                    <button onClick={() => { setAdjustProduct(item); setAdjustAction('add'); setIsAdjustModalOpen(true); }} className="w-7 h-7 flex items-center justify-center rounded bg-white text-gray-600 hover:text-green-600 shadow-sm transition-colors" title="Add Stock"><FontAwesomeIcon icon={faPlus} className="w-3 h-3" /></button>
+                                </div>
+                                
+                                {/* Dropdown Menu */}
+                                <div className="relative">
+                                    <button onClick={() => setOpenDropdownId(openDropdownId === item.id ? null : item.id)} className="p-2 text-gray-400 hover:text-gray-800 rounded-lg transition-colors">
+                                        <FontAwesomeIcon icon={faEllipsisV} className="w-4 h-4" />
+                                    </button>
+                                    
+                                    {openDropdownId === item.id && (
+                                        <>
+                                            <div className="fixed inset-0 z-10" onClick={() => setOpenDropdownId(null)}></div>
+                                            <div className="absolute right-0 mt-2 w-36 bg-white rounded-xl shadow-[0_5px_15px_-3px_rgba(0,0,0,0.1)] border border-gray-100 z-20 overflow-hidden text-left">
+                                                <button onClick={() => { setLabelProduct(item); setIsLabelModalOpen(true); setOpenDropdownId(null); }} className="w-full px-4 py-3 text-xs font-bold text-gray-600 hover:bg-gray-50 flex items-center gap-2"><FontAwesomeIcon icon={faQrcode} className="w-3 h-3 text-purple-500" /> Print Label</button>
+                                                <button onClick={() => { setEditProduct(item); setIsEditModalOpen(true); setOpenDropdownId(null); }} className="w-full px-4 py-3 text-xs font-bold text-gray-600 hover:bg-gray-50 flex items-center gap-2"><FontAwesomeIcon icon={faEdit} className="w-3 h-3 text-blue-500" /> Edit Item</button>
+                                                <div className="border-t border-gray-100"></div>
+                                                <button onClick={() => { handleDeleteProduct(item.id); setOpenDropdownId(null); }} className="w-full px-4 py-3 text-xs font-bold text-red-600 hover:bg-red-50 flex items-center gap-2"><FontAwesomeIcon icon={faTrash} className="w-3 h-3 text-red-500" /> Delete</button>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
                             </div>
                         </td>
                         </tr>
@@ -288,6 +368,33 @@ export default function InventoryPage() {
         <CreateProductModal 
             onClose={() => setIsCreateModalOpen(false)} 
             onSuccess={() => { setIsCreateModalOpen(false); fetchData(); }} 
+        />
+      )}
+
+      {/* --- ADJUST STOCK MODAL --- */}
+      {isAdjustModalOpen && adjustProduct && (
+        <AdjustStockModal
+          product={adjustProduct}
+          initialAction={adjustAction}
+          onClose={() => { setIsAdjustModalOpen(false); setAdjustProduct(null); }}
+          onSuccess={() => { setIsAdjustModalOpen(false); setAdjustProduct(null); fetchData(); }}
+        />
+      )}
+
+      {/* --- EDIT PRODUCT MODAL --- */}
+      {isEditModalOpen && editProduct && (
+        <EditProductModal 
+            product={editProduct}
+            onClose={() => { setIsEditModalOpen(false); setEditProduct(null); }} 
+            onSuccess={() => { setIsEditModalOpen(false); setEditProduct(null); fetchData(); }} 
+        />
+      )}
+
+      {/* --- PRINT LABEL MODAL --- */}
+      {isLabelModalOpen && labelProduct && (
+        <PrintLabelModal
+          product={labelProduct}
+          onClose={() => { setIsLabelModalOpen(false); setLabelProduct(null); }}
         />
       )}
 
@@ -392,6 +499,207 @@ const CreateProductModal = ({ onClose, onSuccess }: { onClose: () => void, onSuc
                         </button>
                     </div>
                 </form>
+            </div>
+        </div>
+    );
+};
+
+// --- ADJUST STOCK MODAL ---
+const AdjustStockModal = ({ product, initialAction, onClose, onSuccess }: { product: any, initialAction: 'add'|'sell', onClose: () => void, onSuccess: () => void }) => {
+    const [actionType, setActionType] = useState(initialAction); // 'add' or 'sell'
+    const [quantity, setQuantity] = useState('');
+    const [submitting, setSubmitting] = useState(false);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!quantity || Number(quantity) <= 0) { alert("Please enter a valid quantity."); return; }
+        
+        setSubmitting(true);
+        const token = localStorage.getItem("access_token");
+        const endpoint = actionType === 'add' ? 'quick_receive' : 'quick_sale';
+
+        try {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_MODERN_TRACKER_URL}/api/inventory/products/${product.id}/${endpoint}/`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ quantity: Number(quantity) })
+            });
+            if (res.ok) {
+                onSuccess();
+            } else {
+                const err = await res.json();
+                alert(err.error || `Failed to ${actionType} stock.`);
+            }
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose}></div>
+            <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+                <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+                    <h2 className="text-lg font-bold text-gray-800">Manage Stock</h2>
+                    <button onClick={onClose} className="text-gray-400 hover:text-red-500"><FontAwesomeIcon icon={faTimes} /></button>
+                </div>
+                <form onSubmit={handleSubmit} className="p-6 space-y-5">
+                    <div className="text-center">
+                        <p className="font-bold text-gray-800">{product.name}</p>
+                        <p className="text-sm text-gray-500">Current Stock: {product.stock}</p>
+                    </div>
+
+                    <div className="flex bg-gray-100 p-1 rounded-xl">
+                        <button type="button" onClick={() => setActionType('add')} className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${actionType === 'add' ? 'bg-white text-green-600 shadow-sm' : 'text-gray-500'}`}>Receive (Add)</button>
+                        <button type="button" onClick={() => setActionType('sell')} className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${actionType === 'sell' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500'}`}>Sell (Deduct)</button>
+                    </div>
+
+                    <div>
+                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Quantity</label>
+                        <input required type="number" min="1" className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg text-center text-lg font-bold focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                            value={quantity} onChange={e => setQuantity(e.target.value)} placeholder="e.g. 50" />
+                    </div>
+
+                    <button type="submit" disabled={submitting} className={`w-full py-3 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 ${actionType === 'add' ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'}`}>
+                        {submitting ? <FontAwesomeIcon icon={faSpinner} className="animate-spin" /> : 'Confirm Update'}
+                    </button>
+                </form>
+            </div>
+        </div>
+    );
+};
+
+// --- EDIT PRODUCT MODAL ---
+const EditProductModal = ({ product, onClose, onSuccess }: { product: InventoryItem, onClose: () => void, onSuccess: () => void }) => {
+    const [formData, setFormData] = useState({
+        name: product.name, 
+        sku: product.sku, 
+        selling_price: product.price.toString(), 
+        cost_price: product.cost_price.toString(), 
+        uom: product.uom, 
+        low_stock_threshold: product.low_stock_threshold
+    });
+    const [submitting, setSubmitting] = useState(false);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setSubmitting(true);
+        const token = localStorage.getItem("access_token");
+
+        try {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_MODERN_TRACKER_URL}/api/inventory/products/${product.id}/`, {
+                method: 'PUT', // PUT request to update the resource
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            });
+            if (res.ok) {
+                onSuccess(); // Close and Refresh
+            } else {
+                alert("Failed to update product. Check your inputs.");
+            }
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose}></div>
+            <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
+                <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+                    <h2 className="text-lg font-bold text-gray-800">Edit Product</h2>
+                    <button onClick={onClose} className="text-gray-400 hover:text-red-500"><FontAwesomeIcon icon={faTimes} /></button>
+                </div>
+                <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">SKU</label>
+                            <input required type="text" className="w-full p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm" 
+                                value={formData.sku} onChange={e => setFormData({...formData, sku: e.target.value})} />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Unit (UoM)</label>
+                            <input type="text" className="w-full p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm" 
+                                value={formData.uom} onChange={e => setFormData({...formData, uom: e.target.value})} />
+                        </div>
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Product Name</label>
+                        <input required type="text" className="w-full p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm" 
+                            value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+                    </div>
+                    <div className="grid grid-cols-3 gap-4">
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Cost Price</label>
+                            <input required type="number" step="0.01" className="w-full p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm" 
+                                value={formData.cost_price} onChange={e => setFormData({...formData, cost_price: e.target.value})} />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Selling Price</label>
+                            <input required type="number" step="0.01" className="w-full p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm" 
+                                value={formData.selling_price} onChange={e => setFormData({...formData, selling_price: e.target.value})} />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Low Alert At</label>
+                            <input required type="number" className="w-full p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm" 
+                                value={formData.low_stock_threshold} onChange={e => setFormData({...formData, low_stock_threshold: Number(e.target.value)})} />
+                        </div>
+                    </div>
+                    <div className="pt-4 flex gap-3">
+                        <button type="button" onClick={onClose} className="flex-1 py-3 bg-gray-100 text-gray-600 rounded-xl font-bold text-sm">Cancel</button>
+                        <button type="submit" disabled={submitting} className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2">
+                            {submitting && <FontAwesomeIcon icon={faSpinner} className="animate-spin" />}
+                            Update Product
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+};
+
+// --- PRINT LABEL (QR/BARCODE) MODAL ---
+const PrintLabelModal = ({ product, onClose }: { product: InventoryItem, onClose: () => void }) => {
+    // We use public APIs to generate real-time barcodes and QR codes without storing them on the server!
+    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(product.sku)}`;
+    const barcodeUrl = `https://barcode.tec-it.com/barcode.ashx?data=${encodeURIComponent(product.sku)}&code=Code128&dpi=96`;
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose}></div>
+            <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+                <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                    <h2 className="text-lg font-bold text-gray-800">Scan Labels</h2>
+                    <button onClick={onClose} className="text-gray-400 hover:text-red-500"><FontAwesomeIcon icon={faTimes} /></button>
+                </div>
+                <div className="p-8 space-y-8 text-center">
+                    <div>
+                        <h3 className="font-bold text-gray-800 mb-1">{product.name}</h3>
+                        <p className="text-xs text-gray-500 mb-4 font-mono">SKU: {product.sku}</p>
+                        
+                        <div className="flex flex-col items-center justify-center gap-6">
+                            {/* QR CODE */}
+                            <div className="p-4 bg-white border-2 border-dashed border-gray-200 rounded-xl inline-block shadow-sm">
+                                <img src={qrCodeUrl} alt="QR Code" className="w-32 h-32 object-contain" />
+                                <p className="text-[10px] text-gray-400 mt-2 font-bold uppercase tracking-widest">QR Code</p>
+                            </div>
+
+                            {/* BARCODE */}
+                            <div className="p-4 bg-white border-2 border-dashed border-gray-200 rounded-xl inline-block w-full shadow-sm">
+                                <img src={barcodeUrl} alt="Barcode" className="h-16 w-full object-contain" />
+                                <p className="text-[10px] text-gray-400 mt-2 font-bold uppercase tracking-widest">Code 128</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button onClick={() => window.print()} className="w-full py-3 bg-[#0f1535] text-white rounded-xl font-bold text-sm hover:bg-blue-900 transition-colors shadow-lg shadow-blue-900/20">
+                        Print Labels
+                    </button>
+                </div>
             </div>
         </div>
     );

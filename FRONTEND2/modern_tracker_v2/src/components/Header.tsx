@@ -26,7 +26,9 @@ interface UserData {
   first_name: string;
   last_name: string;
   email: string;
-  phone_number: string; 
+  phone_number: string;
+  role: string;
+  employer_shop?: number;
   serial_key?: SerialKeyData;
 }
 
@@ -207,6 +209,7 @@ const Header = ({ onMenuClick }: HeaderProps) => {
                       <div className="px-5 py-4 border-b border-gray-100 bg-gray-50/50">
                         <p className="text-sm font-bold text-gray-800">{getDisplayName()}</p>
                         <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                        <span className="inline-block mt-2 px-2 py-1 bg-blue-100 text-blue-700 text-[10px] font-bold rounded uppercase tracking-wider">{user.role}</span>
                       </div>
 
                       {isMounted && (
@@ -265,10 +268,17 @@ const Header = ({ onMenuClick }: HeaderProps) => {
                       )}
 
                       <div className="py-2">
-                        <button className="w-full text-left px-5 py-2 text-sm text-gray-600 hover:bg-gray-50 hover:text-blue-600 flex items-center gap-3 transition-colors">
-                          <FontAwesomeIcon icon={faUserCircle} className="w-3 h-3" />
-                          My Profile
-                        </button>
+                        {user.role === 'ADMIN' ? (
+                          <button onClick={() => { setIsProfileOpen(false); router.push("/admin-dashboard"); }} className="w-full text-left px-5 py-2 text-sm text-gray-800 hover:bg-blue-50 hover:text-blue-700 flex items-center gap-3 transition-colors font-bold">
+                            <FontAwesomeIcon icon={faUserCircle} className="w-4 h-4 text-blue-500" />
+                            Admin Dashboard
+                          </button>
+                        ) : (
+                          <button className="w-full text-left px-5 py-2 text-sm text-gray-600 hover:bg-gray-50 hover:text-blue-600 flex items-center gap-3 transition-colors">
+                            <FontAwesomeIcon icon={faUserCircle} className="w-3 h-3" />
+                            My Profile
+                          </button>
+                        )}
                         <button className="w-full text-left px-5 py-2 text-sm text-gray-600 hover:bg-gray-50 hover:text-blue-600 flex items-center gap-3 transition-colors">
                           <FontAwesomeIcon icon={faCog} className="w-3 h-3" />
                           Account Settings

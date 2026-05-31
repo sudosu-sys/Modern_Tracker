@@ -1,3 +1,5 @@
+# finance/permissions.py
+
 from rest_framework import permissions
 
 class HasFinanceAccess(permissions.BasePermission):

@@ -1,3 +1,4 @@
+# HR/admin.py
 from django.contrib import admin
 from .models import Department, Employee, Attendance, LeaveRequest, PayrollRun, PayStub, PerformanceReview
 

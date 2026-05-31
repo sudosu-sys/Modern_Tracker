@@ -1,30 +1,46 @@
+# core/admin.py
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import SerialKey, CustomUser
+from django.contrib.auth.forms import UserCreationForm, UserChangeForm
+from .models import SerialKey, CustomUser, Shop
+
+# --- CUSTOM FORMS FOR ADMIN ---
+class CustomUserCreationForm(UserCreationForm):
+    class Meta(UserCreationForm.Meta):
+        model = CustomUser
+        fields = ('phone_number',)
+
+class CustomUserChangeForm(UserChangeForm):
+    class Meta(UserChangeForm.Meta):
+        model = CustomUser
+        fields = '__all__'
 
 # 1. Register the new CustomUser Model
 @admin.register(CustomUser)
 class CustomUserAdmin(UserAdmin):
     model = CustomUser
+    add_form = CustomUserCreationForm
+    form = CustomUserChangeForm
     
-    # Customize the list view to show phone numbers
-    list_display = ('phone_number', 'email', 'first_name', 'last_name', 'is_staff')
+    # Added 'role' to the display list so you can see who is who
+    list_display = ('phone_number', 'email', 'first_name', 'last_name', 'role', 'is_staff')
     search_fields = ('phone_number', 'email', 'first_name', 'last_name')
     ordering = ('phone_number',)
 
-    # We must define 'fieldsets' because the default UserAdmin expects a 'username' field
+    # ADDED: 'role' and 'employer_shop' to the edit screen
     fieldsets = (
         (None, {'fields': ('phone_number', 'password')}),
         ('Personal info', {'fields': ('first_name', 'last_name', 'email')}),
+        ('Shop & Role', {'fields': ('role', 'employer_shop')}),
         ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
         ('Important dates', {'fields': ('last_login', 'date_joined')}),
     )
     
-    # We also need to update the "Add User" form configuration
+    # FIXED: Django's creation form actually uses password1 and password2!
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
-            'fields': ('phone_number', 'password'), # removed username
+            'fields': ('phone_number', 'password1', 'password2'), 
         }),
     )
 
@@ -47,3 +63,10 @@ class SerialKeyAdmin(admin.ModelAdmin):
         return obj.is_valid
     is_active_status.boolean = True
     is_active_status.short_description = 'Active?'
+
+# 3. Register the new Shop Model
+@admin.register(Shop)
+class ShopAdmin(admin.ModelAdmin):
+    list_display = ('name', 'owner', 'created_at')
+    search_fields = ('name', 'owner__phone_number', 'owner__email')
+    list_filter = ('created_at',)

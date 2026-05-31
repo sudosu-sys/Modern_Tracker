@@ -55,3 +55,52 @@ def activate_key_view(request):
 
     except SerialKey.DoesNotExist:
         return Response({'error': 'Invalid key provided.'}, status=status.HTTP_404_NOT_FOUND)
+    
+from .models import AuditLog
+from .serializers import AuditLogSerializer
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def admin_dashboard_view(request):
+    # Only Shop Admins are allowed in!
+    if request.user.role != 'ADMIN':
+        return Response({'error': 'Unauthorized access. Admins only.'}, status=status.HTTP_403_FORBIDDEN)
+    
+    shop = getattr(request.user, 'shop', None)
+    if not shop:
+        return Response({'error': 'No shop associated with this admin.'}, status=status.HTTP_404_NOT_FOUND)
+
+    # Fetch the latest 100 immutable activity logs
+    logs = AuditLog.objects.filter(shop=shop)[:100]
+    serializer = AuditLogSerializer(logs, many=True)
+    
+    return Response({
+        'shop_name': shop.name,
+        'logs': serializer.data
+    }, status=status.HTTP_200_OK)
+
+from rest_framework import viewsets
+from django.contrib.auth import get_user_model
+from .serializers import ShopEmployeeSerializer
+
+User = get_user_model()
+
+class ShopEmployeeViewSet(viewsets.ModelViewSet):
+    serializer_class = ShopEmployeeSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # Only Admins can access this viewset
+        if self.request.user.role != 'ADMIN':
+            return User.objects.none()
+        
+        shop = getattr(self.request.user, 'shop', None)
+        if not shop:
+            return User.objects.none()
+            
+        # Return employees of THIS shop, excluding the Admin themselves
+        return User.objects.filter(employer_shop=shop).exclude(id=self.request.user.id)
+
+    def perform_create(self, serializer):
+        # Auto-link the new employee to the Admin's shop
+        serializer.save(employer_shop=self.request.user.shop)

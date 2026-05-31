@@ -23,8 +23,19 @@ class CustomUserManager(BaseUserManager):
 
 # 2. Define the Custom User Model
 class CustomUser(AbstractUser):
+    ROLE_CHOICES = [
+        ('ADMIN', 'Shop Admin'),
+        ('MANAGER', 'Manager'),
+        ('CLERK', 'Inventory Clerk'),
+        ('CASHIER', 'Cashier'),
+    ]
+
     username = None  
     phone_number = models.CharField(max_length=15, unique=True)
+    
+    # New Role & Tenant fields
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='ADMIN')
+    employer_shop = models.ForeignKey('core.Shop', on_delete=models.SET_NULL, null=True, blank=True, related_name='shop_employees')
 
     USERNAME_FIELD = 'phone_number'  
     REQUIRED_FIELDS = []  
@@ -32,7 +43,35 @@ class CustomUser(AbstractUser):
     objects = CustomUserManager()
 
     def __str__(self):
-        return self.phone_number
+        return f"{self.phone_number} ({self.role})"
+
+# --- NEW SHOP MODEL (MULTI-TENANCY BASE) ---
+class Shop(models.Model):
+    owner = models.OneToOneField(
+        settings.AUTH_USER_MODEL,  
+        on_delete=models.CASCADE, 
+        related_name='shop'
+    )
+    name = models.CharField(max_length=255, default="My Shop")
+    address = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+
+# --- 2.5 NEW AUDIT TRAIL LOG ---
+class AuditLog(models.Model):
+    shop = models.ForeignKey(Shop, on_delete=models.CASCADE, related_name='audit_logs')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    action = models.CharField(max_length=50) # e.g., 'ADDED_ITEM', 'SOLD_ITEM'
+    details = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.shop.name} - {self.action} by {self.user}"
 
 # 3. Update SerialKey to link to the new Custom User
 class SerialKey(models.Model):
