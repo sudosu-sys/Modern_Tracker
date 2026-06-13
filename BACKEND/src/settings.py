@@ -14,7 +14,7 @@ SECRET_KEY = 'django-insecure-@e087z&ewjhwov!wm5af#cg1nfb2!rw$z)^1qaxs%6w0q5))xh
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['moderntrackerbackend.pythonanywhere.com', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['moderntrackerbackend.pythonanywhere.com', 'localhost', '127.0.0.1', '10.213.247.88']
 
 
 # Application definition
