@@ -12,16 +12,23 @@ class HasInventoryAccess(permissions.BasePermission):
         if not request.user or not request.user.is_authenticated:
             return False
 
-        # 1. Identify the Shop Context
-        target_shop = getattr(request.user, 'employer_shop', None) or getattr(request.user, 'shop', None)
-        if not target_shop:
-            self.message = "Your account is not linked to any active Shop."
-            return False
+        # 1. Identify the Shop Context (Catching any related object exceptions)
+        try:
+            target_shop = getattr(request.user, 'employer_shop', None) or getattr(request.user, 'shop', None)
+        except Exception:
+            target_shop = None
             
-        # 2. Inherit License from the Shop Owner
-        key = getattr(target_shop.owner, 'serial_key', None)
+        # 2. Inherit License from the Shop Owner, OR use personal key if no shop is created yet
+        if target_shop:
+            key = getattr(target_shop.owner, 'serial_key', None)
+        else:
+            try:
+                key = request.user.serial_key
+            except Exception:
+                key = None
+
         if not key or not key.is_valid or not key.allow_inventory:
-            self.message = "The shop's license is expired or lacks Inventory features."
+            self.message = "Your license is expired or lacks Inventory features."
             return False
 
         # 3. Role-Based Check
