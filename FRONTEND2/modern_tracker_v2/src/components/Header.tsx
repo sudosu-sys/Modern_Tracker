@@ -39,6 +39,7 @@ const Header = ({ onMenuClick }: HeaderProps) => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isRenewModalOpen, setIsRenewModalOpen] = useState(false); 
   const [renewalKey, setRenewalKey] = useState("");                
+  const [selectedPlan, setSelectedPlan] = useState<{title: string, price: string} | null>(null);
   
   // -- DATA STATES --
   const [user, setUser] = useState<UserData | null>(null);
@@ -142,6 +143,7 @@ const Header = ({ onMenuClick }: HeaderProps) => {
       if (res.ok) {
         alert("License Activated Successfully!");
         setIsRenewModalOpen(false);
+        setSelectedPlan(null);
         setRenewalKey("");
         fetchUserData(); 
       } else {
@@ -311,22 +313,99 @@ const Header = ({ onMenuClick }: HeaderProps) => {
       {isRenewModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsRenewModalOpen(false)}></div>
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 overflow-hidden animation-scale-up">
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl p-6 md:p-8 overflow-hidden animation-scale-up">
             
-            <button onClick={() => setIsRenewModalOpen(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+            <button 
+              onClick={() => {
+                setIsRenewModalOpen(false);
+                setSelectedPlan(null);
+              }} 
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+            >
                <FontAwesomeIcon icon={faTimes} className="w-5 h-5" />
             </button>
 
-            <div className="text-center mb-6">
+            <div className="text-center mb-8">
               <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
                  <FontAwesomeIcon icon={faKey} className="text-blue-600 w-5 h-5" />
               </div>
-              <h2 className="text-xl font-bold text-gray-800">Activate License</h2>
-              <p className="text-sm text-gray-500 mt-1">Enter your 16-digit serial key to activate.</p>
+              <h2 className="text-2xl font-bold text-gray-800">Choose a Plan or Activate</h2>
+              <p className="text-sm text-gray-500 mt-1">Select a subscription plan below, or enter a serial key if you already have one.</p>
+            </div>
+
+            {/* Pricing Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                {/* 1 Month */}
+                <div 
+                  onClick={() => setSelectedPlan({title: '1 Month', price: '999 Birr'})}
+                  className={`bg-white border-2 rounded-xl p-5 text-center transition-colors cursor-pointer group shadow-sm hover:shadow-md ${selectedPlan?.title === '1 Month' ? 'border-blue-500 ring-2 ring-blue-500/20' : 'border-gray-100 hover:border-gray-300'}`}
+                >
+                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">1 Month</p>
+                    <p className="text-2xl font-bold text-[#0f1535] mt-3">999<span className="text-sm text-gray-400 ml-1">Birr</span></p>
+                </div>
+                
+                {/* 3 Months */}
+                <div 
+                  onClick={() => setSelectedPlan({title: '3 Months', price: '2,997 Birr'})}
+                  className={`bg-white border-2 rounded-xl p-5 text-center transition-colors cursor-pointer group shadow-sm hover:shadow-md ${selectedPlan?.title === '3 Months' ? 'border-blue-500 ring-2 ring-blue-500/20' : 'border-gray-100 hover:border-gray-300'}`}
+                >
+                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">3 Months</p>
+                    <p className="text-2xl font-bold text-[#0f1535] mt-3">2,997<span className="text-sm text-gray-400 ml-1">Birr</span></p>
+                </div>
+
+                {/* 6 Months */}
+                <div 
+                  onClick={() => setSelectedPlan({title: '6 Months', price: '4,995 Birr'})}
+                  className={`bg-blue-50 border-2 rounded-xl p-5 text-center transition-colors cursor-pointer relative overflow-hidden shadow-sm hover:shadow-md ${selectedPlan?.title === '6 Months' ? 'border-blue-500 ring-2 ring-blue-500/30' : 'border-blue-200 hover:border-blue-400'}`}
+                >
+                    <div className="absolute top-0 inset-x-0 bg-blue-500 text-white text-[10px] font-bold py-1 uppercase tracking-widest">1 Month Free</div>
+                    <p className="text-xs font-bold text-blue-700 uppercase tracking-wider mt-4">6 Months</p>
+                    <p className="text-2xl font-bold text-blue-900 mt-3">4,995<span className="text-sm text-blue-600/70 ml-1">Birr</span></p>
+                </div>
+
+                {/* 12 Months */}
+                <div 
+                  onClick={() => setSelectedPlan({title: '12 Months', price: '9,990 Birr'})}
+                  className={`bg-green-50 border-2 rounded-xl p-5 text-center transition-colors cursor-pointer relative overflow-hidden shadow-sm hover:shadow-md ${selectedPlan?.title === '12 Months' ? 'border-green-600 ring-2 ring-green-500/30' : 'border-green-200 hover:border-green-400'}`}
+                >
+                    <div className="absolute top-0 inset-x-0 bg-green-500 text-white text-[10px] font-bold py-1 uppercase tracking-widest">2 Months Free</div>
+                    <p className="text-xs font-bold text-green-700 uppercase tracking-wider mt-4">12 Months</p>
+                    <p className="text-2xl font-bold text-green-900 mt-3">9,990<span className="text-sm text-green-600/70 ml-1">Birr</span></p>
+                </div>
+            </div>
+
+            {/* Payment Details Section */}
+            {selectedPlan && (
+              <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-8 text-left animate-in fade-in duration-300">
+                <h3 className="font-bold text-gray-800 mb-2">Complete payment for {selectedPlan.title} ({selectedPlan.price})</h3>
+                <p className="text-xs text-gray-600 mb-4">Transfer the total amount using one of the methods below, then contact our support team with a screenshot of your receipt to receive your activation key.</p>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Telebirr */}
+                  <div className="bg-white p-4 rounded-lg border border-gray-200 flex flex-col justify-center">
+                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Telebirr</p>
+                    <p className="font-mono text-lg font-bold text-[#00B4D8]">0911234567</p>
+                    <p className="text-[10px] text-gray-400 mt-1 uppercase">Name: Modern Tracker</p>
+                  </div>
+                  
+                  {/* CBE */}
+                  <div className="bg-white p-4 rounded-lg border border-gray-200 flex flex-col justify-center">
+                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">CBE (Commercial Bank)</p>
+                    <p className="font-mono text-lg font-bold text-[#5A189A]">1000123456789</p>
+                    <p className="text-[10px] text-gray-400 mt-1 uppercase">Name: Modern Tracker</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Divider */}
+            <div className="flex items-center gap-4 mb-6">
+                <div className="flex-1 h-px bg-gray-200"></div>
+                <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Already have a key?</span>
+                <div className="flex-1 h-px bg-gray-200"></div>
             </div>
 
             <div className="mb-6">
-              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Serial Key</label>
               <input
                 type="text"
                 value={renewalKey}
@@ -338,14 +417,17 @@ const Header = ({ onMenuClick }: HeaderProps) => {
 
             <div className="flex gap-3">
               <button 
-                onClick={() => setIsRenewModalOpen(false)}
+                onClick={() => {
+                  setIsRenewModalOpen(false);
+                  setSelectedPlan(null);
+                }}
                 className="flex-1 py-3 bg-gray-100 text-gray-600 rounded-xl font-bold text-sm hover:bg-gray-200 transition"
               >
                 Cancel
               </button>
               <button 
                 onClick={handleRenewSubmit}
-                className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 shadow-lg shadow-blue-600/20 transition transform active:scale-[0.98]"
+                className="flex-1 py-3 bg-[#0f1535] text-white rounded-xl font-bold text-sm hover:bg-blue-900 shadow-lg shadow-blue-900/20 transition transform active:scale-[0.98]"
               >
                 Activate Key
               </button>
