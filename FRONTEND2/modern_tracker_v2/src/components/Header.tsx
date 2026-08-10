@@ -295,11 +295,15 @@ const Header = ({ onMenuClick }: HeaderProps) => {
                       </div>
                     </>
                   ) : (
-                    <div className="p-6 text-center">
-                      <p className="text-sm text-gray-500 mb-4">You are not logged in.</p>
+                    <div className="p-6 text-center flex flex-col gap-3">
+                      <p className="text-sm text-gray-500 mb-1">You are not logged in.</p>
                       <button onClick={() => router.push("/login")} className="w-full bg-[#0f1535] text-white py-2 rounded-lg text-sm font-bold hover:bg-blue-900 transition-colors flex items-center justify-center gap-2">
                         <FontAwesomeIcon icon={faSignInAlt} className="w-3 h-3" />
                         Login Now
+                      </button>
+                      <button onClick={() => router.push("/signup")} className="w-full bg-white border-2 border-gray-100 text-gray-700 py-2 rounded-lg text-sm font-bold hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
+                        <FontAwesomeIcon icon={faUser} className="w-3 h-3" />
+                        Create Account
                       </button>
                     </div>
                   )}
