@@ -16,6 +16,7 @@ urlpatterns = [
     # This is your Login Endpoint
     path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('signup/', signup_view, name='signup'),
 
     path('me/', current_user_view, name='current_user'),
     path('activate/', activate_key_view, name='activate_key'),

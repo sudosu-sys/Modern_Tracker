@@ -1,7 +1,10 @@
 # core/serializers.py
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from .models import SerialKey
+from .models import SerialKey, Shop, AuditLog
+from datetime import timedelta
+from django.utils import timezone
+
 
 # Use the active user model (Your CustomUser)
 User = get_user_model()
@@ -67,3 +70,41 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         # CHANGED: Added role and employer_shop
         fields = ['id', 'phone_number', 'email', 'first_name', 'last_name', 'role', 'employer_shop', 'serial_key']
+
+class SignupSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True)
+    confirm_password = serializers.CharField(write_only=True)
+    shop_name = serializers.CharField(write_only=True, required=False, default="My Shop")
+
+    class Meta:
+        model = User
+        fields = ['phone_number', 'password', 'confirm_password', 'shop_name']
+
+    def validate(self, data):
+        if data['password'] != data['confirm_password']:
+            raise serializers.ValidationError({"password": "Passwords do not match."})
+        return data
+
+    def create(self, validated_data):
+        validated_data.pop('confirm_password')
+        shop_name = validated_data.pop('shop_name', "My Shop")
+        
+        user = User.objects.create_user(
+            phone_number=validated_data['phone_number'],
+            password=validated_data['password'],
+            role='ADMIN'
+        )
+        
+        Shop.objects.create(owner=user, name=shop_name)
+        
+        now = timezone.now()
+        SerialKey.objects.create(
+            user=user,
+            start_date=now,
+            end_date=now + timedelta(days=3),
+            allow_inventory=True,
+            allow_hr=True,
+            allow_finance=True
+        )
+        
+        return user

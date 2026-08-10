@@ -3,14 +3,15 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation"; 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-// CHANGED: Imported faPhone instead of faEnvelope
-import { faPhone, faLock, faSpinner } from "@fortawesome/free-solid-svg-icons";
+// ADDED: faEye and faEyeSlash imports
+import { faPhone, faLock, faSpinner, faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
 
 const LoginPage = () => {
   const router = useRouter();
-  // CHANGED: State is now phoneNumber
   const [phoneNumber, setPhoneNumber] = useState("");
   const [password, setPassword] = useState("");
+  // ADDED: State to manage password visibility
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -96,14 +97,23 @@ const LoginPage = () => {
             <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Password</label>
             <div className="relative">
               <FontAwesomeIcon icon={faLock} className="absolute left-4 top-3.5 text-gray-400 w-4 h-4" />
+              {/* CHANGED: type is dynamic based on showPassword state */}
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm text-gray-900 placeholder-gray-400"
+                className="w-full pl-11 pr-11 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm text-gray-900 placeholder-gray-400"
                 placeholder="••••••••"
               />
+              {/* ADDED: Eye icon button to toggle visibility */}
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 focus:outline-none"
+              >
+                <FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye} className="w-4 h-4" />
+              </button>
             </div>
             <div className="flex justify-end mt-2">
               <a href="#" className="text-xs text-blue-600 hover:text-blue-700 font-medium">Forgot Password?</a>

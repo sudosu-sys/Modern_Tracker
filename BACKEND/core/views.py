@@ -1,11 +1,12 @@
 # core/views.py
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from django.utils import timezone
 from .models import SerialKey
-from .serializers import UserSerializer
+from .serializers import UserSerializer, SignupSerializer
+
 
 
 @api_view(['GET'])
@@ -104,3 +105,12 @@ class ShopEmployeeViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         # Auto-link the new employee to the Admin's shop
         serializer.save(employer_shop=self.request.user.shop)
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def signup_view(request):
+    serializer = SignupSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response({"message": "Account created successfully."}, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
