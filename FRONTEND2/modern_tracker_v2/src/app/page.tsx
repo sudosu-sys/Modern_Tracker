@@ -1,7 +1,8 @@
 // src/app/page.tsx
 
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import Header from "@/components/Header";
 import Image from "next/image";
@@ -50,8 +51,16 @@ const stockOutProducts = [
 ];
 
 export default function Home() {
+  const router = useRouter();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Mobile state
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false); // Desktop state
+
+  useEffect(() => {
+    const token = localStorage.getItem("access_token");
+    if (!token) {
+      router.push("/landing");
+    }
+  }, [router]);
 
   return (
     <div className="flex bg-[#f6f9fc] min-h-screen font-sans text-slate-800">
@@ -95,7 +104,7 @@ export default function Home() {
                  <div className="relative w-full h-full">
                     <Image 
                       src="/welcome.svg" 
-                      alt="Welcome Illustration" 
+                      alt="" 
                       fill 
                       className="object-contain object-right-bottom pb-4 pr-8"
                       priority
