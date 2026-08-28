@@ -227,7 +227,7 @@ export default function LandingPage() {
                   <span className="text-sm font-bold text-green-400">+24.5%</span>
                 </div>
                 <div className="px-5 pb-2">
-                  <span className="text-2xl font-bold text-white">$12,450.00</span>
+                  <span className="text-2xl font-bold text-white">ETB 12,450.00</span>
                 </div>
                 <div className="flex-1 w-full mt-auto">
                   <ResponsiveContainer width="100%" height="100%">

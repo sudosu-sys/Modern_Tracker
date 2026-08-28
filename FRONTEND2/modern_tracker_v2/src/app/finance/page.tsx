@@ -140,7 +140,7 @@ export default function FinancePage() {
   const handleOCRUpload = async () => {
     setOcrLoading(true);
     setTimeout(async () => {
-      alert("Receipt processed! Extracted Vendor: OFFICE DEPOT, Amount: $150.00");
+      alert("Receipt processed! Extracted Vendor: OFFICE DEPOT, Amount: 150.00 ETB");
       setOcrLoading(false);
     }, 2000);
   };
@@ -204,15 +204,15 @@ export default function FinancePage() {
                     <div className="space-y-3">
                       <div className="flex justify-between items-center pb-2 border-b border-gray-50">
                         <span className="text-sm text-gray-600">Total Revenue</span>
-                        <span className="font-bold text-green-600">${plData?.total_revenue || "0.00"}</span>
+                        <span className="font-bold text-green-600">ETB {plData?.total_revenue || "0.00"}</span>
                       </div>
                       <div className="flex justify-between items-center pb-2 border-b border-gray-50">
                         <span className="text-sm text-gray-600">Total Expenses</span>
-                        <span className="font-bold text-red-500">-${plData?.total_expenses || "0.00"}</span>
+                        <span className="font-bold text-red-500">-ETB {plData?.total_expenses || "0.00"}</span>
                       </div>
                       <div className="flex justify-between items-center pt-2">
                         <span className="font-bold text-gray-800">Net Profit</span>
-                        <span className="text-lg font-bold text-[#0f1535]">${plData?.net_profit || "0.00"}</span>
+                        <span className="text-lg font-bold text-[#0f1535]">ETB {plData?.net_profit || "0.00"}</span>
                       </div>
                     </div>
                   </div>
@@ -230,15 +230,15 @@ export default function FinancePage() {
                     <div className="space-y-3">
                       <div className="flex justify-between items-center pb-2 border-b border-gray-50">
                         <span className="text-sm text-gray-600">Assets</span>
-                        <span className="font-bold text-blue-600">${bsData?.assets || "0.00"}</span>
+                        <span className="font-bold text-blue-600">ETB {bsData?.assets || "0.00"}</span>
                       </div>
                       <div className="flex justify-between items-center pb-2 border-b border-gray-50">
                         <span className="text-sm text-gray-600">Liabilities</span>
-                        <span className="font-bold text-gray-800">${bsData?.liabilities || "0.00"}</span>
+                        <span className="font-bold text-gray-800">ETB {bsData?.liabilities || "0.00"}</span>
                       </div>
                       <div className="flex justify-between items-center pt-2">
                         <span className="text-sm text-gray-600">Equity</span>
-                        <span className="font-bold text-gray-800">${bsData?.equity || "0.00"}</span>
+                        <span className="font-bold text-gray-800">ETB {bsData?.equity || "0.00"}</span>
                       </div>
                     </div>
                   </div>
@@ -266,17 +266,17 @@ export default function FinancePage() {
                     <tbody className="divide-y divide-gray-50 text-sm">
                       <tr className="hover:bg-gray-50/50">
                         <td className="p-4 font-bold text-gray-800">Accounts Receivable (AR)</td>
-                        <td className="p-4 text-right">${agingData?.accounts_receivable?.['0_30'] || 0}</td>
-                        <td className="p-4 text-right">${agingData?.accounts_receivable?.['31_60'] || 0}</td>
-                        <td className="p-4 text-right">${agingData?.accounts_receivable?.['61_90'] || 0}</td>
-                        <td className="p-4 text-right text-red-500 font-bold">${agingData?.accounts_receivable?.['90_plus'] || 0}</td>
+                        <td className="p-4 text-right">ETB {agingData?.accounts_receivable?.['0_30'] || 0}</td>
+                        <td className="p-4 text-right">ETB {agingData?.accounts_receivable?.['31_60'] || 0}</td>
+                        <td className="p-4 text-right">ETB {agingData?.accounts_receivable?.['61_90'] || 0}</td>
+                        <td className="p-4 text-right text-red-500 font-bold">ETB {agingData?.accounts_receivable?.['90_plus'] || 0}</td>
                       </tr>
                       <tr className="hover:bg-gray-50/50">
                         <td className="p-4 font-bold text-gray-800">Accounts Payable (AP)</td>
-                        <td className="p-4 text-right">${agingData?.accounts_payable?.['0_30'] || 0}</td>
-                        <td className="p-4 text-right">${agingData?.accounts_payable?.['31_60'] || 0}</td>
-                        <td className="p-4 text-right">${agingData?.accounts_payable?.['61_90'] || 0}</td>
-                        <td className="p-4 text-right text-red-500 font-bold">${agingData?.accounts_payable?.['90_plus'] || 0}</td>
+                        <td className="p-4 text-right">ETB {agingData?.accounts_payable?.['0_30'] || 0}</td>
+                        <td className="p-4 text-right">ETB {agingData?.accounts_payable?.['31_60'] || 0}</td>
+                        <td className="p-4 text-right">ETB {agingData?.accounts_payable?.['61_90'] || 0}</td>
+                        <td className="p-4 text-right text-red-500 font-bold">ETB {agingData?.accounts_payable?.['90_plus'] || 0}</td>
                       </tr>
                     </tbody>
                   </table>
@@ -303,7 +303,7 @@ export default function FinancePage() {
                               <td className="py-3 font-medium text-gray-800">{inv.customer_name}</td>
                               <td className="py-3 text-gray-600">{inv.due_date}</td>
                               <td className="py-3"><span className="px-2 py-1 rounded text-[10px] bg-gray-100">{inv.status}</span></td>
-                              <td className="py-3 text-right font-bold">${inv.balance_due}</td>
+                              <td className="py-3 text-right font-bold">ETB {inv.balance_due}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -331,7 +331,7 @@ export default function FinancePage() {
                               <td className="py-3 font-medium text-gray-800">{bill.vendor_name}</td>
                               <td className="py-3 text-gray-600">{bill.due_date}</td>
                               <td className="py-3"><span className="px-2 py-1 rounded text-[10px] bg-gray-100">{bill.status}</span></td>
-                              <td className="py-3 text-right font-bold">${bill.balance_due}</td>
+                              <td className="py-3 text-right font-bold">ETB {bill.balance_due}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -462,7 +462,7 @@ export default function FinancePage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Amount ($)</label>
+                  <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Amount (ETB)</label>
                   <input type="number" step="0.01" required value={invoiceForm.amount} onChange={e => setInvoiceForm({...invoiceForm, amount: e.target.value})} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" />
                 </div>
                 <div>
@@ -493,7 +493,7 @@ export default function FinancePage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Amount ($)</label>
+                  <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Amount (ETB)</label>
                   <input type="number" step="0.01" required value={billForm.amount} onChange={e => setBillForm({...billForm, amount: e.target.value})} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" />
                 </div>
                 <div>

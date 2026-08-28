@@ -36,18 +36,18 @@ const dataYearly = [
 ];
 
 const recentPurchases = [
-  { id: "#6d3wedo5", product: "Aavic Headphone", status: "Success", amount: "$152.25" },
-  { id: "#6d3wedo6", product: "Nike Shoes", status: "Pending", amount: "$125.25" },
-  { id: "#6d3wedo7", product: "Premium Shirt", status: "Success", amount: "$115.25" },
-  { id: "#6d3wedo8", product: "Polo T-shirt", status: "Pending", amount: "$97.25" },
-  { id: "#6d3wedo9", product: "Jeans Pant", status: "Success", amount: "$255.25" },
+  { id: "#6d3wedo5", product: "Aavic Headphone", status: "Success", amount: "ETB 152.25" },
+  { id: "#6d3wedo6", product: "Nike Shoes", status: "Pending", amount: "ETB 125.25" },
+  { id: "#6d3wedo7", product: "Premium Shirt", status: "Success", amount: "ETB 115.25" },
+  { id: "#6d3wedo8", product: "Polo T-shirt", status: "Pending", amount: "ETB 97.25" },
+  { id: "#6d3wedo9", product: "Jeans Pant", status: "Success", amount: "ETB 255.25" },
 ];
 const stockOutProducts = [
-  { product: "Samsung Galaxy-M1", stock: "00", amount: "$152.25" },
-  { product: "Nike Shoes", stock: "00", amount: "$125.25" },
-  { product: "Premium Shirt", stock: "00", amount: "$115.25" },
-  { product: "Polo T-shirt", stock: "00", amount: "$97.25" },
-  { product: "Jeans Pant", stock: "00", amount: "$255.25" },
+  { product: "Samsung Galaxy-M1", stock: "00", amount: "ETB 152.25" },
+  { product: "Nike Shoes", stock: "00", amount: "ETB 125.25" },
+  { product: "Premium Shirt", stock: "00", amount: "ETB 115.25" },
+  { product: "Polo T-shirt", stock: "00", amount: "ETB 97.25" },
+  { product: "Jeans Pant", stock: "00", amount: "ETB 255.25" },
 ];
 
 export default function Home() {
@@ -94,7 +94,7 @@ export default function Home() {
                   <span className="text-xs text-gray-400">Today's Visit</span>
                 </div>
                 <div>
-                  <span className="text-2xl font-bold block">$10,360.66</span>
+                  <span className="text-2xl font-bold block">ETB 10,360.66</span>
                   <span className="text-xs text-gray-400">Today's total sales</span>
                 </div>
               </div>
@@ -117,15 +117,15 @@ export default function Home() {
             <div className="lg:col-span-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
               <StatCard title="Order" value="32,350" sub="9350" trend="25.25%" up={true} />
               <StatCard title="Sold Items" value="2,360" sub="1350" trend="2.65%" up={false} />
-              <StatCard title="Gross Sale" value="$12.4k" sub="11350" trend="10.25%" up={true} />
-              <StatCard title="Shipping" value="$6,240" sub="4350" trend="13.15%" up={false} />
+              <StatCard title="Gross Sale" value="ETB 12.4k" sub="11350" trend="10.25%" up={true} />
+              <StatCard title="Shipping" value="ETB 6,240" sub="4350" trend="13.15%" up={false} />
             </div>
           </div>
 
           {/* MIDDLE ROW: 4 Charts */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             
-            <ChartWidget title="Weekly Sales" value="$10.2k" trend="25%" up={true}>
+            <ChartWidget title="Weekly Sales" value="ETB 10.2k" trend="25%" up={true}>
               <ResponsiveContainer width="100%" height={80}>
                 <BarChart data={dataWeekly}><Bar dataKey="val" fill="#3b82f6" radius={[4, 4, 4, 4]} barSize={8} /></BarChart>
               </ResponsiveContainer>
@@ -138,13 +138,13 @@ export default function Home() {
               </div>
             </ChartWidget>
 
-            <ChartWidget title="Total Order" value="$12.2k" trend="2.6%" up={true}>
+            <ChartWidget title="Total Order" value="ETB 12.2k" trend="2.6%" up={true}>
               <ResponsiveContainer width="100%" height={80}>
                 <AreaChart data={dataArea}><Area type="monotone" dataKey="uv" stroke="#3b82f6" fill="#eff6ff" strokeWidth={2} /></AreaChart>
               </ResponsiveContainer>
             </ChartWidget>
 
-             <ChartWidget title="Market Share" value="$14.2k" trend="2.6%" up={true}>
+             <ChartWidget title="Market Share" value="ETB 14.2k" trend="2.6%" up={true}>
                <div className="relative h-20 w-20 mx-auto">
                 <ResponsiveContainer>
                   <PieChart>

@@ -254,7 +254,7 @@ export default function InventoryPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <StatCard icon={faBoxOpen} title="Total SKUs" value={stats?.total_products || 0} sub="Items across all locations" color="blue" />
                 <StatCard icon={faExclamationTriangle} title="Low Stock Alerts" value={stats?.low_stock_alert || 0} sub="Requires reordering" color="orange" />
-                <StatCard icon={faWarehouse} title="Inventory Value" value={`$${stats?.inventory_valuation || 0}`} sub="Current asset value" color="green" />
+                <StatCard icon={faWarehouse} title="Inventory Value" value={`ETB ${stats?.inventory_valuation || 0}`} sub="Current asset value" color="green" />
                 <StatCard icon={faChartLine} title="Sales (30d)" value={stats?.items_sold_period || 0} sub="Total items sold" color="purple" />
             </div>
           )}
