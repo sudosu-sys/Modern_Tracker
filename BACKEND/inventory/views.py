@@ -11,6 +11,10 @@ from .serializers import (
     WarehouseSerializer, LocationSerializer
 )
 from .permissions import HasInventoryAccess
+from django.db.models import Sum, Q, F
+from django.utils import timezone
+from datetime import timedelta
+from .models import OrderItem
 
 class BaseInventoryViewSet(viewsets.ModelViewSet):
     """
@@ -71,31 +75,34 @@ class ProductViewSet(BaseInventoryViewSet):
 
         # Find the location with the most stock for this product
         stock = Stock.objects.filter(product=product).order_by('-quantity').first()
-        
+
         if not stock or stock.quantity < quantity_to_sell:
             return Response({'error': 'Not enough stock available to perform quick sale.'}, status=400)
 
+        target_shop = getattr(request.user, 'employer_shop', None) or getattr(request.user, 'shop', None)
+        tx_owner = target_shop.owner if target_shop else request.user
+
         InventoryTransaction.objects.create(
             transaction_type='OUT',
-            owner=request.user,
+            owner=tx_owner,
+            shop=target_shop,
             product=product,
             quantity=quantity_to_sell,
             source_location=stock.location,
             destination_location=None,
             reference='Quick Sale (POS)'
         )
-        
+
         # --- AUDIT TRAIL LOGGING ---
         from core.models import AuditLog
-        target_shop = getattr(request.user, 'employer_shop', None) or getattr(request.user, 'shop', None)
         if target_shop:
             AuditLog.objects.create(
                 shop=target_shop, user=request.user, action='SOLD_ITEM',
                 details=f"Sold {quantity_to_sell}x {product.name}"
             )
-        
+
         return Response({'status': 'Stock updated successfully', 'deducted': quantity_to_sell})
-    
+
     @action(detail=True, methods=['post'])
     def quick_receive(self, request, pk=None):
         from decimal import Decimal
@@ -103,35 +110,38 @@ class ProductViewSet(BaseInventoryViewSet):
         product = self.get_object()
         quantity_to_add = Decimal(str(request.data.get('quantity', 1)))
 
+        target_shop = getattr(request.user, 'employer_shop', None) or getattr(request.user, 'shop', None)
+        tx_owner = target_shop.owner if target_shop else request.user
+
         # Find where this product is normally stored, or grab the first location
         stock = Stock.objects.filter(product=product).first()
-        location = stock.location if stock else Location.objects.filter(warehouse__owner=request.user).first()
-        
+        location = stock.location if stock else Location.objects.filter(warehouse__owner=tx_owner).first()
+
         if not location:
             # Auto-create a default location for smooth onboarding if they haven't made one yet
-            warehouse, _ = Warehouse.objects.get_or_create(owner=request.user, defaults={'name': 'Main Warehouse', 'address': 'HQ'})
+            warehouse, _ = Warehouse.objects.get_or_create(owner=tx_owner, shop=target_shop, defaults={'name': 'Main Warehouse', 'address': 'HQ'})
             location, _ = Location.objects.get_or_create(warehouse=warehouse, defaults={'name': 'Default Bin'})
 
         # Create IN transaction
         InventoryTransaction.objects.create(
             transaction_type='IN',
-            owner=request.user,
+            owner=tx_owner,
+            shop=target_shop,
             product=product,
             quantity=quantity_to_add,
             source_location=None,
             destination_location=location,
             reference='Manual Adjustment (Add)'
         )
-        
+
         # --- AUDIT TRAIL LOGGING ---
         from core.models import AuditLog
-        target_shop = getattr(request.user, 'employer_shop', None) or getattr(request.user, 'shop', None)
         if target_shop:
             AuditLog.objects.create(
                 shop=target_shop, user=request.user, action='RECEIVED_ITEM',
                 details=f"Received {quantity_to_add}x {product.name}"
             )
-        
+
         return Response({'status': 'Stock added successfully', 'added': quantity_to_add})
     
 class SupplierViewSet(BaseInventoryViewSet):
@@ -215,6 +225,163 @@ class StockViewSet(viewsets.ModelViewSet):
 
 class AnalyticsViewSet(viewsets.ViewSet):
     permission_classes = [IsAuthenticated, HasInventoryAccess]
+
+    @action(detail=False, methods=['get'])
+    def main_dashboard(self, request):
+        user = request.user
+        target_shop = getattr(user, 'employer_shop', None) or getattr(user, 'shop', None)
+
+        if target_shop:
+            base_filter = Q(shop=target_shop) | Q(owner=target_shop.owner, shop__isnull=True)
+            tx_filter = Q(shop=target_shop) | Q(owner=target_shop.owner, shop__isnull=True)
+            owner = target_shop.owner
+        else:
+            base_filter = Q(owner=user)
+            tx_filter = Q(owner=user)
+            owner = user
+
+        now_dt = timezone.now()
+        today_start = now_dt.replace(hour=0, minute=0, second=0, microsecond=0)
+        tomorrow_start = today_start + timedelta(days=1)
+
+        recent_items = InventoryTransaction.objects.filter(
+            tx_filter, transaction_type='OUT'
+        ).order_by('-created_at')[:5]
+
+        recent_purchases = [{
+            "id": f"#{item.id}",
+            "product": item.product.name,
+            "status": "COMPLETED",
+            "amount": f"ETB {item.quantity * item.product.selling_price}"
+        } for item in recent_items]
+
+        product_stocks = Product.objects.filter(base_filter).annotate(
+            total_stock=Sum('stock__quantity')
+        )
+
+        all_stock_outs = product_stocks.filter(Q(total_stock__lte=0) | Q(total_stock__isnull=True))
+        out_of_stock_count = all_stock_outs.count()
+        low_stock_count = product_stocks.filter(total_stock__gt=0, total_stock__lte=F('low_stock_threshold')).count()
+        healthy_stock_count = product_stocks.filter(total_stock__gt=F('low_stock_threshold')).count()
+
+        in_stock_count = low_stock_count + healthy_stock_count
+
+        stock_out_products = [{
+            "product": p.name,
+            "stock": "0",
+            "amount": f"ETB {p.selling_price}"
+        } for p in all_stock_outs[:5]]
+
+        today_sales = InventoryTransaction.objects.filter(
+            tx_filter, transaction_type='OUT', created_at__gte=today_start, created_at__lt=tomorrow_start
+        ).aggregate(total=Sum(F('quantity') * F('product__selling_price')))['total'] or 0
+
+        today_items_sold = InventoryTransaction.objects.filter(
+            tx_filter, transaction_type='OUT', created_at__gte=today_start, created_at__lt=tomorrow_start
+        ).aggregate(total=Sum('quantity'))['total'] or 0
+
+        total_orders = InventoryTransaction.objects.filter(tx_filter, transaction_type='OUT').count()
+        sold_items = InventoryTransaction.objects.filter(tx_filter, transaction_type='OUT').aggregate(total=Sum('quantity'))['total'] or 0
+        gross_sale = InventoryTransaction.objects.filter(
+            tx_filter, transaction_type='OUT'
+        ).aggregate(total=Sum(F('quantity') * F('product__selling_price')))['total'] or 0
+
+        if target_shop:
+            stock_filter = Q(product__shop=target_shop) | Q(product__owner=target_shop.owner, product__shop__isnull=True)
+        else:
+            stock_filter = Q(product__owner=user)
+        stocks = Stock.objects.filter(stock_filter)
+        inventory_valuation = sum(s.quantity * s.product.cost_price for s in stocks)
+
+        def get_period_stats(start_dt, end_dt):
+            sales = InventoryTransaction.objects.filter(
+                tx_filter, transaction_type='OUT',
+                created_at__gte=start_dt, created_at__lt=end_dt
+            ).aggregate(total=Sum(F('quantity') * F('product__selling_price')))['total'] or 0
+
+            expenses = InventoryTransaction.objects.filter(
+                tx_filter, transaction_type='IN',
+                created_at__gte=start_dt, created_at__lt=end_dt
+            ).aggregate(total=Sum(F('quantity') * F('product__cost_price')))['total'] or 0
+
+            return {
+                "sales": float(sales),
+                "expense": float(expenses),
+                "profit": float(sales) - float(expenses)
+            }
+
+        analytics_yearly = []
+        for month in range(1, 13):
+            start_dt = today_start.replace(month=month, day=1)
+            if month == 12:
+                end_dt = start_dt.replace(year=start_dt.year + 1, month=1)
+            else:
+                end_dt = start_dt.replace(month=month + 1)
+            stats = get_period_stats(start_dt, end_dt)
+            stats["name"] = start_dt.strftime('%b')
+            analytics_yearly.append(stats)
+
+        analytics_monthly = []
+        for i in range(3, -1, -1):
+            start_dt = today_start - timedelta(days=(i*7)+6)
+            end_dt = today_start - timedelta(days=(i*7)-1)
+            stats = get_period_stats(start_dt, end_dt)
+            stats["name"] = f"Week {4-i}"
+            analytics_monthly.append(stats)
+
+        analytics_weekly = []
+        data_area = []
+        for i in range(6, -1, -1):
+            start_dt = today_start - timedelta(days=i)
+            end_dt = start_dt + timedelta(days=1)
+            stats = get_period_stats(start_dt, end_dt)
+            stats["name"] = start_dt.strftime('%a')[0]
+            analytics_weekly.append(stats)
+
+            day_orders = InventoryTransaction.objects.filter(tx_filter, transaction_type='OUT', created_at__gte=start_dt, created_at__lt=end_dt).count()
+            data_area.append({"name": start_dt.strftime('%a')[0], "uv": day_orders})
+
+        analytics_daily = []
+        for i in range(0, 24, 4):
+            start_dt = today_start + timedelta(hours=i)
+            end_dt = start_dt + timedelta(hours=4)
+            stats = get_period_stats(start_dt, end_dt)
+            stats["name"] = f"{i:02d}:00"
+            analytics_daily.append(stats)
+
+        user_display_name = user.first_name if user.first_name else user.phone_number
+
+        return Response({
+            "header": {
+                "today_sales": float(today_sales),
+                "today_items_sold": float(today_items_sold),
+                "user_name": user_display_name
+            },
+            "stat_cards": {
+                "orders": total_orders,
+                "sold_items": float(sold_items),
+                "inventory_valuation": float(inventory_valuation),
+                "gross_sale": float(gross_sale),
+            },
+            "charts": {
+                "analytics": {
+                    "Yearly": analytics_yearly,
+                    "Monthly": analytics_monthly,
+                    "Weekly": analytics_weekly,
+                    "Daily": analytics_daily
+                },
+                "weekly": analytics_weekly,
+                "area": data_area,
+                "in_stock_count": in_stock_count,
+                "pie": [
+                    {"name": "Healthy", "value": healthy_stock_count}, 
+                    {"name": "Low Stock", "value": low_stock_count}, 
+                    {"name": "Out of Stock", "value": out_of_stock_count}
+                ],
+            },
+            "recent_purchases": recent_purchases,
+            "stock_out_products": stock_out_products
+        })
 
     @action(detail=False, methods=['get'])
     def dashboard_stats(self, request):

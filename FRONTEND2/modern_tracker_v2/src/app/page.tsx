@@ -13,53 +13,40 @@ import {
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowUp, faArrowDown } from "@fortawesome/free-solid-svg-icons";
 
-// --- Dummy Data (Same as before) ---
-const dataWeekly = [
-  { name: "M", val: 40 }, { name: "T", val: 30 }, { name: "W", val: 50 },
-  { name: "T", val: 45 }, { name: "F", val: 60 }, { name: "S", val: 55 },
-];
-const dataArea = [
-  { name: "A", uv: 4000 }, { name: "B", uv: 3000 }, { name: "C", uv: 5000 },
-  { name: "D", uv: 2780 }, { name: "E", uv: 1890 }, { name: "F", uv: 2390 },
-  { name: "G", uv: 3490 },
-];
-const dataPie = [{ name: "A", value: 400 }, { name: "B", value: 100 }];
 const COLORS = ["#3b82f6", "#e5e7eb"];
-
-const dataYearly = [
-  { name: "Jan", sales: 40, expense: 24 }, { name: "Feb", sales: 30, expense: 13 },
-  { name: "Mar", sales: 20, expense: 58 }, { name: "Apr", sales: 27, expense: 39 },
-  { name: "May", sales: 18, expense: 48 }, { name: "Jun", sales: 23, expense: 38 },
-  { name: "Jul", sales: 34, expense: 43 }, { name: "Aug", sales: 60, expense: 20 },
-  { name: "Sep", sales: 40, expense: 24 }, { name: "Oct", sales: 50, expense: 24 },
-  { name: "Nov", sales: 30, expense: 13 }, { name: "Dec", sales: 20, expense: 10 },
-];
-
-const recentPurchases = [
-  { id: "#6d3wedo5", product: "Aavic Headphone", status: "Success", amount: "ETB 152.25" },
-  { id: "#6d3wedo6", product: "Nike Shoes", status: "Pending", amount: "ETB 125.25" },
-  { id: "#6d3wedo7", product: "Premium Shirt", status: "Success", amount: "ETB 115.25" },
-  { id: "#6d3wedo8", product: "Polo T-shirt", status: "Pending", amount: "ETB 97.25" },
-  { id: "#6d3wedo9", product: "Jeans Pant", status: "Success", amount: "ETB 255.25" },
-];
-const stockOutProducts = [
-  { product: "Samsung Galaxy-M1", stock: "00", amount: "ETB 152.25" },
-  { product: "Nike Shoes", stock: "00", amount: "ETB 125.25" },
-  { product: "Premium Shirt", stock: "00", amount: "ETB 115.25" },
-  { product: "Polo T-shirt", stock: "00", amount: "ETB 97.25" },
-  { product: "Jeans Pant", stock: "00", amount: "ETB 255.25" },
-];
+const PIE_COLORS = ["#22c55e", "#f59e0b", "#ef4444"]; // Green, Orange, Red
 
 export default function Home() {
   const router = useRouter();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Mobile state
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false); // Desktop state
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false); 
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false); 
+  const [dashboardData, setDashboardData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [analyticsFilter, setAnalyticsFilter] = useState<'Yearly' | 'Monthly' | 'Weekly' | 'Daily'>('Yearly');
 
   useEffect(() => {
-    const token = localStorage.getItem("access_token");
-    if (!token) {
-      router.push("/landing");
-    }
+    const fetchDashboardData = async () => {
+      const token = localStorage.getItem("access_token");
+      if (!token) {
+        router.push("/landing");
+        return;
+      }
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_MODERN_TRACKER_URL}/api/inventory/analytics/main_dashboard/`, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setDashboardData(data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch dashboard data", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
   }, [router]);
 
   return (
@@ -80,21 +67,26 @@ export default function Home() {
         <Header onMenuClick={() => setIsSidebarOpen(true)} />
 
         <main className="p-4 md:p-8 space-y-6 md:space-y-8">
-          
+          {loading ? (
+             <div className="flex items-center justify-center h-[60vh] text-gray-400 font-medium text-lg">
+                Loading Real-Time Dashboard...
+             </div>
+          ) : (
+          <>
           {/* TOP ROW: Welcome + Stats */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             
             {/* Welcome Widget */}
             <div className="lg:col-span-7 bg-white rounded-2xl p-6 md:p-8 shadow-sm relative overflow-hidden flex flex-col justify-center">
               <div className="z-10">
-                <h2 className="text-blue-500 font-medium mb-1">Good Morning, Maruf!</h2>
+                <h2 className="text-blue-500 font-medium mb-1">Good Morning, {dashboardData?.header?.user_name || 'User'}!</h2>
                 <p className="text-gray-500 text-sm mb-6">Here's what happening with your store today!</p>
                 <div className="mb-2">
-                  <span className="text-2xl font-bold block">15,350.25</span>
-                  <span className="text-xs text-gray-400">Today's Visit</span>
+                  <span className="text-2xl font-bold block">{dashboardData?.header?.today_items_sold || 0}</span>
+                  <span className="text-xs text-gray-400">Items Sold Today</span>
                 </div>
                 <div>
-                  <span className="text-2xl font-bold block">ETB 10,360.66</span>
+                  <span className="text-2xl font-bold block">ETB {dashboardData?.header?.today_sales?.toLocaleString() || "0.00"}</span>
                   <span className="text-xs text-gray-400">Today's total sales</span>
                 </div>
               </div>
@@ -113,58 +105,35 @@ export default function Home() {
               </div>
             </div>
 
-            {/* 4 Stats Cards */}
-            <div className="lg:col-span-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <StatCard title="Order" value="32,350" sub="9350" trend="25.25%" up={true} />
-              <StatCard title="Sold Items" value="2,360" sub="1350" trend="2.65%" up={false} />
-              <StatCard title="Gross Sale" value="ETB 12.4k" sub="11350" trend="10.25%" up={true} />
-              <StatCard title="Shipping" value="ETB 6,240" sub="4350" trend="13.15%" up={false} />
+            {/* Stats Cards */}
+            <div className="lg:col-span-5 flex flex-col gap-4">
+              <StatCard title="Sold Items" value={dashboardData?.stat_cards?.sold_items || 0} sub="Total Units Delivered" trend="--" up={true} />
+              <StatCard title="Inventory Value" value={`ETB ${dashboardData?.stat_cards?.inventory_valuation?.toLocaleString() || 0}`} sub="Total Asset Worth" trend="--" up={true} />
             </div>
           </div>
 
-          {/* MIDDLE ROW: 4 Charts */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            
-            <ChartWidget title="Weekly Sales" value="ETB 10.2k" trend="25%" up={true}>
+          {/* MIDDLE ROW: 2 Charts */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
+
+            <ChartWidget title="Weekly Sales" value="7 Days" trend="--" up={true}>
               <ResponsiveContainer width="100%" height={80}>
-                <BarChart data={dataWeekly}><Bar dataKey="val" fill="#3b82f6" radius={[4, 4, 4, 4]} barSize={8} /></BarChart>
+                <BarChart data={dashboardData?.charts?.weekly || []}><Bar dataKey="sales" fill="#3b82f6" radius={[4, 4, 4, 4]} barSize={8} /></BarChart>
               </ResponsiveContainer>
             </ChartWidget>
 
-            <ChartWidget title="Product Share" value="39.56%" trend="10%" up={true}>
+            <ChartWidget title="Product Status" value={dashboardData?.charts?.in_stock_count || 0} note="Distinct products with at least 1 item in stock">
               <div className="relative h-20 w-20 mx-auto">
-                <ResponsiveContainer><PieChart><Pie data={dataPie} innerRadius={25} outerRadius={35} dataKey="value">{dataPie.map((e, i) => <Cell key={i} fill={COLORS[i]} />)}</Pie></PieChart></ResponsiveContainer>
-                <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-gray-600">75%</div>
-              </div>
-            </ChartWidget>
-
-            <ChartWidget title="Total Order" value="ETB 12.2k" trend="2.6%" up={true}>
-              <ResponsiveContainer width="100%" height={80}>
-                <AreaChart data={dataArea}><Area type="monotone" dataKey="uv" stroke="#3b82f6" fill="#eff6ff" strokeWidth={2} /></AreaChart>
-              </ResponsiveContainer>
-            </ChartWidget>
-
-             <ChartWidget title="Market Share" value="ETB 14.2k" trend="2.6%" up={true}>
-               <div className="relative h-20 w-20 mx-auto">
                 <ResponsiveContainer>
                   <PieChart>
-                    {/* Inner Ring: Solid Grey Background */}
-                    <Pie data={[{ value: 100 }]} innerRadius={20} outerRadius={24} dataKey="value" isAnimationActive={false}>
-                      <Cell fill="#e5e7eb" stroke="none" />
+                    <Pie data={dashboardData?.charts?.pie || []} innerRadius={25} outerRadius={35} dataKey="value" stroke="none">
+                      {(dashboardData?.charts?.pie || []).map((e: any, i: number) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
                     </Pie>
-                    {/* Middle Ring: Orange Data */}
-                    <Pie data={[{ value: 65 }, { value: 35 }]} innerRadius={28} outerRadius={32} dataKey="value" startAngle={90} endAngle={-270}>
-                      <Cell fill="#f59e0b" stroke="none" /><Cell fill="transparent" stroke="none" />
-                    </Pie>
-                    {/* Outer Ring: Blue Data */}
-                    <Pie data={[{ value: 80 }, { value: 20 }]} innerRadius={36} outerRadius={40} dataKey="value" startAngle={90} endAngle={-270}>
-                      <Cell fill="#3b82f6" stroke="none" /><Cell fill="transparent" stroke="none" />
-                    </Pie>
+                    <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', fontSize: '10px', padding: '4px 8px' }} itemStyle={{ color: '#334155' }} />
                   </PieChart>
                 </ResponsiveContainer>
-                 <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-gray-600">166</div>
               </div>
             </ChartWidget>
+
           </div>
 
           {/* ANALYTICS CHART */}
@@ -175,21 +144,30 @@ export default function Home() {
                  <div className="flex items-center gap-2 text-xs font-medium">
                     <span className="w-2 h-2 rounded-full bg-blue-500"></span> Sales
                     <span className="w-2 h-2 rounded-full bg-slate-500"></span> Expense
+                    <span className="w-2 h-2 rounded-full bg-green-400"></span> Profit
                  </div>
-                 <select className="text-xs bg-transparent border-none outline-none text-gray-500 font-medium cursor-pointer hover:text-blue-500 transition">
-                    <option>Yearly</option>
+                 <select 
+                    value={analyticsFilter}
+                    onChange={(e) => setAnalyticsFilter(e.target.value as any)}
+                    className="text-xs bg-transparent border-none outline-none text-gray-500 font-medium cursor-pointer hover:text-blue-500 transition"
+                 >
+                    <option value="Yearly">Yearly</option>
+                    <option value="Monthly">Monthly</option>
+                    <option value="Weekly">Weekly</option>
+                    <option value="Daily">Daily</option>
                  </select>
               </div>
             </div>
             <div className="h-72 w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={dataYearly} barGap={8} margin={{ top: 20, right: 0, left: -20, bottom: 0 }}>
+                <BarChart data={dashboardData?.charts?.analytics?.[analyticsFilter] || []} barGap={4} margin={{ top: 20, right: 0, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                   <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#94a3b8'}} dy={10} />
                   <YAxis axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#94a3b8'}} />
                   <Tooltip cursor={{fill: '#f8fafc'}} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                  <Bar dataKey="sales" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={8} />
-                  <Bar dataKey="expense" fill="#64748b" radius={[4, 4, 0, 0]} barSize={8} />
+                  <Bar dataKey="sales" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={6} />
+                  <Bar dataKey="expense" fill="#64748b" radius={[4, 4, 0, 0]} barSize={6} />
+                  <Bar dataKey="profit" fill="#4ade80" radius={[4, 4, 0, 0]} barSize={6} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -214,14 +192,16 @@ export default function Home() {
                          </tr>
                       </thead>
                       <tbody>
-                         {[...recentPurchases, ...recentPurchases].map((item, index) => (
+                         {dashboardData?.recent_purchases?.length === 0 ? (
+                           <tr><td colSpan={4} className="py-8 text-center text-gray-400">No recent purchases found.</td></tr>
+                         ) : (dashboardData?.recent_purchases || []).map((item: any, index: number) => (
                             <tr key={index} className="text-sm text-gray-600 border-b border-gray-50">
                                <td className="py-4">{item.id}</td>
                                <td className="py-4 font-medium text-gray-800">{item.product}</td>
                                <td className="py-4">
-                                  <span className={`px-2 py-1 rounded text-[10px] ${item.status==='Success'?'bg-green-50 text-green-600':'bg-red-50 text-red-500'}`}>{item.status}</span>
+                                  <span className={`px-2 py-1 rounded text-[10px] font-bold ${item.status === 'COMPLETED' ? 'bg-green-50 text-green-600' : 'bg-orange-50 text-orange-500'}`}>{item.status}</span>
                                </td>
-                               <td className="py-4 text-right">{item.amount}</td>
+                               <td className="py-4 text-right font-bold">{item.amount}</td>
                             </tr>
                          ))}
                       </tbody>
@@ -244,11 +224,13 @@ export default function Home() {
                          </tr>
                       </thead>
                       <tbody>
-                         {[...stockOutProducts, ...stockOutProducts].map((item, index) => (
+                         {dashboardData?.stock_out_products?.length === 0 ? (
+                           <tr><td colSpan={3} className="py-8 text-center text-gray-400">Inventory is fully stocked!</td></tr>
+                         ) : (dashboardData?.stock_out_products || []).map((item: any, index: number) => (
                             <tr key={index} className="text-sm text-gray-600 border-b border-gray-50">
                                <td className="py-4 font-medium text-gray-800">{item.product}</td>
-                               <td className="py-4 text-center"><span className="bg-red-50 text-red-500 px-2 py-1 rounded-lg text-xs">{item.stock}</span></td>
-                               <td className="py-4 text-right">{item.amount}</td>
+                               <td className="py-4 text-center"><span className="bg-red-50 text-red-500 px-2 py-1 rounded-lg text-xs font-bold">{item.stock}</span></td>
+                               <td className="py-4 text-right font-bold">{item.amount}</td>
                             </tr>
                          ))}
                       </tbody>
@@ -256,7 +238,8 @@ export default function Home() {
                 </div>
              </div>
           </div>
-
+          </>
+          )}
         </main>
       </div>
     </div>
@@ -279,7 +262,7 @@ const StatCard = ({ title, value, sub, trend, up }: any) => (
   </div>
 );
 
-const ChartWidget = ({ title, value, trend, up, children }: any) => (
+const ChartWidget = ({ title, value, trend, up, note, children }: any) => (
   <div className="bg-white p-5 rounded-2xl shadow-sm flex flex-col justify-between h-40">
     <div className="flex justify-between items-start h-full">
       <div className="flex flex-col justify-between h-full">
@@ -287,9 +270,13 @@ const ChartWidget = ({ title, value, trend, up, children }: any) => (
            <p className="text-gray-500 text-xs font-medium mb-1">{title}</p>
            <h4 className="text-lg font-bold text-gray-800">{value}</h4>
         </div>
-        <span className={`text-xs flex items-center gap-1 ${up ? 'text-green-500' : 'text-red-500'}`}>
-           <FontAwesomeIcon icon={up ? faArrowUp : faArrowDown} className="w-2 h-2" /> {trend}
-        </span>
+        {note ? (
+          <span className="text-[9px] text-gray-400 mt-2 max-w-[120px] leading-tight">{note}</span>
+        ) : (
+          <span className={`text-xs flex items-center gap-1 ${up ? 'text-green-500' : 'text-red-500'}`}>
+             <FontAwesomeIcon icon={up ? faArrowUp : faArrowDown} className="w-2 h-2" /> {trend}
+          </span>
+        )}
       </div>
       <div className="w-20 h-full flex items-center">{children}</div>
     </div>
