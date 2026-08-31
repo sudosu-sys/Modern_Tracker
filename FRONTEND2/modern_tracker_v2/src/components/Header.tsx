@@ -388,15 +388,15 @@ const Header = ({ onMenuClick }: HeaderProps) => {
                   {/* Telebirr */}
                   <div className="bg-white p-4 rounded-lg border border-gray-200 flex flex-col justify-center">
                     <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Telebirr</p>
-                    <p className="font-mono text-lg font-bold text-[#00B4D8]">0911234567</p>
-                    <p className="text-[10px] text-gray-400 mt-1 uppercase">Name: Modern Tracker</p>
+                    <p className="font-mono text-lg font-bold text-[#00B4D8]">0967142279</p>
+                    <p className="text-[10px] text-gray-400 mt-1 uppercase">Name: Fuad Shemsu Ahmed</p>
                   </div>
                   
                   {/* CBE */}
                   <div className="bg-white p-4 rounded-lg border border-gray-200 flex flex-col justify-center">
                     <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">CBE (Commercial Bank)</p>
-                    <p className="font-mono text-lg font-bold text-[#5A189A]">1000123456789</p>
-                    <p className="text-[10px] text-gray-400 mt-1 uppercase">Name: Modern Tracker</p>
+                    <p className="font-mono text-lg font-bold text-[#5A189A]">1000505916755</p>
+                    <p className="text-[10px] text-gray-400 mt-1 uppercase">Name: Yonatan Afework Tesfaye</p>
                   </div>
                 </div>
               </div>
